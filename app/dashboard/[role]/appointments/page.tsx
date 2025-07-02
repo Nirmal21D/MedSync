@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import * as React from "react"
 
 import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
@@ -22,13 +22,17 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar, Clock, Plus, Search, User, FileText, CheckCircle, X } from "lucide-react"
-import { mockAppointments, mockPatients, mockStaff, type Appointment } from "@/lib/mock-data"
+import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import type { Appointment } from "@/lib/types"
 
-export default function AppointmentsPage({ params }: { params: { role: string } }) {
+export default function AppointmentsPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = params
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
+  const { role } = React.use(params)
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [patients, setPatients] = useState<any[]>([])
+  const [staff, setStaff] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("all")
@@ -37,6 +41,17 @@ export default function AppointmentsPage({ params }: { params: { role: string } 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/")
+    }
+    if (db && user) {
+      getDocs(collection(db, "appointments")).then(snapshot => {
+        setAppointments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Appointment))
+      })
+      getDocs(collection(db, "patients")).then(snapshot => {
+        setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+      })
+      getDocs(collection(db, "users")).then(snapshot => {
+        setStaff(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+      })
     }
   }, [user, loading, router])
 
@@ -101,9 +116,9 @@ export default function AppointmentsPage({ params }: { params: { role: string } 
 
   const filteredAppointments = getFilteredAppointments()
 
-  const handleAddAppointment = (newAppointment: Partial<Appointment>) => {
-    const appointment: Appointment = {
-      id: (appointments.length + 1).toString(),
+  const handleAddAppointment = async (newAppointment: Partial<Appointment>) => {
+    if (!db) return
+    const appointment: Omit<Appointment, "id"> = {
       patientId: newAppointment.patientId || "",
       patientName: newAppointment.patientName || "",
       doctorId: newAppointment.doctorId || "",
@@ -114,11 +129,14 @@ export default function AppointmentsPage({ params }: { params: { role: string } 
       status: "scheduled",
       notes: newAppointment.notes,
     }
-    setAppointments([...appointments, appointment])
+    const docRef = await addDoc(collection(db, "appointments"), appointment)
+    setAppointments([...appointments, { ...appointment, id: docRef.id }])
     setShowAddAppointment(false)
   }
 
-  const handleStatusChange = (appointmentId: string, newStatus: "scheduled" | "completed" | "cancelled") => {
+  const handleStatusChange = async (appointmentId: string, newStatus: "scheduled" | "completed" | "cancelled") => {
+    if (!db) return
+    await updateDoc(doc(db, "appointments", appointmentId), { status: newStatus })
     setAppointments(appointments.map((a) => (a.id === appointmentId ? { ...a, status: newStatus } : a)))
   }
 
@@ -146,7 +164,7 @@ export default function AppointmentsPage({ params }: { params: { role: string } 
                 <DialogTitle>Schedule New Appointment</DialogTitle>
                 <DialogDescription>Book an appointment for a patient</DialogDescription>
               </DialogHeader>
-              <AddAppointmentForm onSubmit={handleAddAppointment} onCancel={() => setShowAddAppointment(false)} />
+              <AddAppointmentForm onSubmit={handleAddAppointment} onCancel={() => setShowAddAppointment(false)} patients={patients} staff={staff} />
             </DialogContent>
           </Dialog>
         </div>
@@ -353,10 +371,14 @@ export default function AppointmentsPage({ params }: { params: { role: string } 
   )
 }
 
-function AddAppointmentForm({
-  onSubmit,
-  onCancel,
-}: { onSubmit: (appointment: Partial<Appointment>) => void; onCancel: () => void }) {
+type AddAppointmentFormProps = {
+  onSubmit: (appointment: Partial<Appointment>) => void;
+  onCancel: () => void;
+  patients: any[];
+  staff: any[];
+}
+
+function AddAppointmentForm({ onSubmit, onCancel, patients, staff }: AddAppointmentFormProps) {
   const [formData, setFormData] = useState({
     patientName: "",
     doctorName: "",
@@ -371,6 +393,7 @@ function AddAppointmentForm({
     onSubmit({
       ...formData,
       date: new Date(formData.date),
+      type: (formData.type as "consultation" | "follow-up" | "emergency") || "consultation",
     })
   }
 
@@ -387,7 +410,7 @@ function AddAppointmentForm({
               <SelectValue placeholder="Select patient" />
             </SelectTrigger>
             <SelectContent>
-              {mockPatients.map((patient) => (
+              {patients.map((patient) => (
                 <SelectItem key={patient.id} value={patient.name}>
                   {patient.name}
                 </SelectItem>
@@ -405,7 +428,7 @@ function AddAppointmentForm({
               <SelectValue placeholder="Select doctor" />
             </SelectTrigger>
             <SelectContent>
-              {mockStaff
+              {staff
                 .filter((s) => s.role === "doctor")
                 .map((doctor) => (
                   <SelectItem key={doctor.id} value={doctor.name}>

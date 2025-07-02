@@ -1,21 +1,45 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Users, Package, Activity, TrendingUp, AlertTriangle, CheckCircle } from "lucide-react"
-import { mockPatients, mockStaff, mockInventory, mockAIInsights } from "@/lib/mock-data"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
+import UserManagement from "./user-management"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 export default function AdminDashboard() {
-  const totalPatients = mockPatients.length
-  const totalStaff = mockStaff.length
-  const criticalPatients = mockPatients.filter((p) => p.status === "critical").length
-  const lowStockItems = mockInventory.filter((i) => i.status === "low-stock" || i.status === "out-of-stock").length
+  const [totalPatients, setTotalPatients] = useState(0)
+  const [totalStaff, setTotalStaff] = useState(0)
+  const [criticalPatients, setCriticalPatients] = useState(0)
+  const [lowStockItems, setLowStockItems] = useState(0)
+
+  useEffect(() => {
+    if (!db) return
+    // Fetch patients
+    getDocs(collection(db, "patients")).then(snapshot => {
+      setTotalPatients(snapshot.size)
+      setCriticalPatients(snapshot.docs.filter(doc => doc.data().status === "critical").length)
+    })
+    // Fetch staff
+    getDocs(collection(db, "users")).then(snapshot => {
+      setTotalStaff(snapshot.size)
+    })
+    // Fetch inventory
+    getDocs(collection(db, "inventory")).then(snapshot => {
+      setLowStockItems(snapshot.docs.filter(doc => {
+        const status = doc.data().status
+        return status === "low-stock" || status === "out-of-stock"
+      }).length)
+    })
+  }, [])
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"]
 
   return (
     <div className="space-y-6">
+      <UserManagement />
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
         <p className="text-gray-600">Hospital management overview</p>
@@ -67,95 +91,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* AI Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <TrendingUp className="mr-2 h-5 w-5" />
-              {mockAIInsights.opdPrediction.title}
-            </CardTitle>
-            <CardDescription>AI-powered prediction based on historical data</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={mockAIInsights.opdPrediction.data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="patients" fill="#3B82F6" />
-              </BarChart>
-            </ResponsiveContainer>
-            <p className="text-sm text-muted-foreground mt-2">💡 {mockAIInsights.opdPrediction.insight}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{mockAIInsights.commonConditions.title}</CardTitle>
-            <CardDescription>Most frequent diagnoses this week</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={mockAIInsights.commonConditions.data}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ condition, percentage }) => `${condition} ${percentage}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {mockAIInsights.commonConditions.data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <p className="text-sm text-muted-foreground mt-2">💡 {mockAIInsights.commonConditions.insight}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Top Performing Doctors */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{mockAIInsights.topDoctors.title}</CardTitle>
-          <CardDescription>Based on patient volume and satisfaction ratings</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {mockAIInsights.topDoctors.data.map((doctor, index) => (
-              <div key={doctor.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="h-10 w-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                      {index + 1}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="font-medium">{doctor.name}</p>
-                    <p className="text-sm text-gray-600">{doctor.department}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold">{doctor.patients} patients</p>
-                  <div className="flex items-center">
-                    <span className="text-sm text-gray-600 mr-1">Rating:</span>
-                    <Badge variant="secondary">{doctor.rating}/5.0</Badge>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-sm text-muted-foreground mt-4">💡 {mockAIInsights.topDoctors.insight}</p>
-        </CardContent>
-      </Card>
 
       {/* Recent Alerts */}
       <Card>

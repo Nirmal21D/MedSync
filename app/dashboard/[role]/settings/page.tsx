@@ -12,22 +12,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Hospital, Shield, Bell, Database, Download, Upload, Save } from "lucide-react"
-import { mockSystemSettings, type SystemSettings } from "@/lib/mock-data"
+import { doc, getDoc, setDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import type { SystemSettings } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
+import * as React from "react"
 
-export default function SettingsPage({ params }: { params: { role: string } }) {
+export default function SettingsPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = params
+  const { role } = React.use(params)
   const { toast } = useToast()
-  const [settings, setSettings] = useState<SystemSettings>(mockSystemSettings)
+  const [settings, setSettings] = useState<SystemSettings | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/")
     }
-  }, [user, loading, router])
+    if (db && user && role === "admin") {
+      getDoc(doc(db, "system", "settings")).then(snapshot => {
+        if (snapshot.exists()) {
+          setSettings(snapshot.data() as SystemSettings)
+        }
+      })
+    }
+  }, [user, loading, router, role])
 
   // Only admin can access settings
   useEffect(() => {
@@ -44,12 +54,12 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
     )
   }
 
-  if (!user || role !== "admin") return null
+  if (!user || role !== "admin" || !settings) return null
 
   const handleSave = async () => {
+    if (!db || !settings) return
     setIsSaving(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await setDoc(doc(db, "system", "settings"), settings)
     setIsSaving(false)
     toast({
       title: "Settings saved",
@@ -60,9 +70,6 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
   const handleExportData = () => {
     // Simulate data export
     const data = {
-      patients: "mockPatients",
-      staff: "mockStaff",
-      inventory: "mockInventory",
       exportDate: new Date().toISOString(),
     }
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })

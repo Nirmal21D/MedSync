@@ -1,7 +1,7 @@
 "use client"
 import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import DashboardLayout from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -22,18 +22,28 @@ import {
   Area,
 } from "recharts"
 import { TrendingUp, TrendingDown, Users, DollarSign, Package, Activity, Calendar, FileText } from "lucide-react"
-import { mockAnalyticsData, mockPatients, mockStaff, mockInventory } from "@/lib/mock-data"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import * as React from "react"
 
-export default function AnalyticsPage({ params }: { params: { role: string } }) {
+export default function AnalyticsPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = params
+  const { role } = React.use(params)
+  const [totalPatients, setTotalPatients] = useState(0)
+  const [totalStaff, setTotalStaff] = useState(0)
+  const [totalInventory, setTotalInventory] = useState(0)
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/")
     }
-  }, [user, loading, router])
+    if (db && user && role === "admin") {
+      getDocs(collection(db, "patients")).then(snapshot => setTotalPatients(snapshot.size))
+      getDocs(collection(db, "users")).then(snapshot => setTotalStaff(snapshot.size))
+      getDocs(collection(db, "inventory")).then(snapshot => setTotalInventory(snapshot.size))
+    }
+  }, [user, loading, router, role])
 
   // Only admin can access analytics
   useEffect(() => {
@@ -54,8 +64,8 @@ export default function AnalyticsPage({ params }: { params: { role: string } }) 
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
 
-  const totalRevenue = mockAnalyticsData.financialMetrics.reduce((sum, item) => sum + item.revenue, 0)
-  const totalExpenses = mockAnalyticsData.financialMetrics.reduce((sum, item) => sum + item.expenses, 0)
+  const totalRevenue = 0
+  const totalExpenses = 0
   const totalProfit = totalRevenue - totalExpenses
 
   return (
@@ -88,10 +98,10 @@ export default function AnalyticsPage({ params }: { params: { role: string } }) 
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
+              <div className="text-2xl font-bold">$0</div>
               <p className="text-xs text-muted-foreground">
                 <TrendingUp className="inline h-3 w-3 mr-1" />
-                +12% from last period
+                +0% from last period
               </p>
             </CardContent>
           </Card>
@@ -102,10 +112,10 @@ export default function AnalyticsPage({ params }: { params: { role: string } }) 
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockPatients.length}</div>
+              <div className="text-2xl font-bold">{totalPatients}</div>
               <p className="text-xs text-muted-foreground">
                 <TrendingUp className="inline h-3 w-3 mr-1" />
-                +8% from last period
+                +0% from last period
               </p>
             </CardContent>
           </Card>
@@ -116,10 +126,10 @@ export default function AnalyticsPage({ params }: { params: { role: string } }) 
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockStaff.length}</div>
+              <div className="text-2xl font-bold">{totalStaff}</div>
               <p className="text-xs text-muted-foreground">
                 <TrendingUp className="inline h-3 w-3 mr-1" />
-                +2% from last period
+                +0% from last period
               </p>
             </CardContent>
           </Card>
@@ -130,10 +140,10 @@ export default function AnalyticsPage({ params }: { params: { role: string } }) 
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockInventory.length}</div>
+              <div className="text-2xl font-bold">{totalInventory}</div>
               <p className="text-xs text-muted-foreground">
                 <TrendingDown className="inline h-3 w-3 mr-1" />
-                -5% from last period
+                +0% from last period
               </p>
             </CardContent>
           </Card>
@@ -146,17 +156,7 @@ export default function AnalyticsPage({ params }: { params: { role: string } }) 
               <CardTitle>Patient Flow Trends</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={mockAnalyticsData.patientFlow}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tickFormatter={(date) => new Date(date).toLocaleDateString()} />
-                  <YAxis />
-                  <Tooltip labelFormatter={(date) => new Date(date).toLocaleDateString()} />
-                  <Area type="monotone" dataKey="admissions" stackId="1" stroke="#8884d8" fill="#8884d8" />
-                  <Area type="monotone" dataKey="discharges" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
-                  <Area type="monotone" dataKey="transfers" stackId="1" stroke="#ffc658" fill="#ffc658" />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div className="text-center text-gray-500 py-12">No analytics data available.</div>
             </CardContent>
           </Card>
 
@@ -165,15 +165,7 @@ export default function AnalyticsPage({ params }: { params: { role: string } }) 
               <CardTitle>Department Utilization</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={mockAnalyticsData.departmentStats}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="department" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="utilization" fill="#8884d8" />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="text-center text-gray-500 py-12">No analytics data available.</div>
             </CardContent>
           </Card>
         </div>
@@ -185,44 +177,16 @@ export default function AnalyticsPage({ params }: { params: { role: string } }) 
               <CardTitle>Financial Performance</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={mockAnalyticsData.financialMetrics}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
-                  <Line type="monotone" dataKey="revenue" stroke="#8884d8" strokeWidth={2} />
-                  <Line type="monotone" dataKey="expenses" stroke="#82ca9d" strokeWidth={2} />
-                  <Line type="monotone" dataKey="profit" stroke="#ffc658" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="text-center text-gray-500 py-12">No analytics data available.</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Inventory Cost Distribution</CardTitle>
+              <CardTitle>Inventory Trends</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={mockAnalyticsData.inventoryTrends.slice(0, 3)}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ category, cost }) => `${category}: $${cost.toLocaleString()}`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="cost"
-                  >
-                    {mockAnalyticsData.inventoryTrends.slice(0, 3).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="text-center text-gray-500 py-12">No analytics data available.</div>
             </CardContent>
           </Card>
         </div>
@@ -245,27 +209,7 @@ export default function AnalyticsPage({ params }: { params: { role: string } }) 
                   </tr>
                 </thead>
                 <tbody>
-                  {mockAnalyticsData.departmentStats.map((dept, index) => (
-                    <tr key={index} className="border-b">
-                      <td className="p-2 font-medium">{dept.department}</td>
-                      <td className="p-2">{dept.patients}</td>
-                      <td className="p-2">{dept.staff}</td>
-                      <td className="p-2">{dept.utilization}%</td>
-                      <td className="p-2">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            dept.utilization >= 90
-                              ? "bg-red-100 text-red-800"
-                              : dept.utilization >= 80
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-green-100 text-green-800"
-                          }`}
-                        >
-                          {dept.utilization >= 90 ? "High Load" : dept.utilization >= 80 ? "Moderate" : "Normal"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {/* Placeholder for department data */}
                 </tbody>
               </table>
             </div>
@@ -284,19 +228,19 @@ export default function AnalyticsPage({ params }: { params: { role: string } }) 
             <CardContent className="space-y-2">
               <div className="flex justify-between">
                 <span>Total Admissions:</span>
-                <span className="font-bold">142</span>
+                <span className="font-bold">0</span>
               </div>
               <div className="flex justify-between">
                 <span>Total Discharges:</span>
-                <span className="font-bold">138</span>
+                <span className="font-bold">0</span>
               </div>
               <div className="flex justify-between">
                 <span>Average Stay:</span>
-                <span className="font-bold">4.2 days</span>
+                <span className="font-bold">0 days</span>
               </div>
               <div className="flex justify-between">
                 <span>Bed Occupancy:</span>
-                <span className="font-bold">85%</span>
+                <span className="font-bold">0%</span>
               </div>
             </CardContent>
           </Card>
@@ -311,19 +255,19 @@ export default function AnalyticsPage({ params }: { params: { role: string } }) 
             <CardContent className="space-y-2">
               <div className="flex justify-between">
                 <span>Total Revenue:</span>
-                <span className="font-bold text-green-600">${totalRevenue.toLocaleString()}</span>
+                <span className="font-bold text-green-600">$0</span>
               </div>
               <div className="flex justify-between">
                 <span>Total Expenses:</span>
-                <span className="font-bold text-red-600">${totalExpenses.toLocaleString()}</span>
+                <span className="font-bold text-red-600">$0</span>
               </div>
               <div className="flex justify-between">
                 <span>Net Profit:</span>
-                <span className="font-bold text-blue-600">${totalProfit.toLocaleString()}</span>
+                <span className="font-bold text-blue-600">$0</span>
               </div>
               <div className="flex justify-between">
                 <span>Profit Margin:</span>
-                <span className="font-bold">{Math.round((totalProfit / totalRevenue) * 100)}%</span>
+                <span className="font-bold">0%</span>
               </div>
             </CardContent>
           </Card>
@@ -338,19 +282,19 @@ export default function AnalyticsPage({ params }: { params: { role: string } }) 
             <CardContent className="space-y-2">
               <div className="flex justify-between">
                 <span>Patient Satisfaction:</span>
-                <span className="font-bold">4.7/5.0</span>
+                <span className="font-bold">0/5.0</span>
               </div>
               <div className="flex justify-between">
                 <span>Readmission Rate:</span>
-                <span className="font-bold">8.2%</span>
+                <span className="font-bold">0%</span>
               </div>
               <div className="flex justify-between">
                 <span>Average Response Time:</span>
-                <span className="font-bold">12 min</span>
+                <span className="font-bold">0 min</span>
               </div>
               <div className="flex justify-between">
                 <span>Staff Efficiency:</span>
-                <span className="font-bold">92%</span>
+                <span className="font-bold">0%</span>
               </div>
             </CardContent>
           </Card>

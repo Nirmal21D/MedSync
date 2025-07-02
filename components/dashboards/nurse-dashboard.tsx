@@ -1,17 +1,28 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Users, FileText, Clock, AlertCircle, Plus, Bell } from "lucide-react"
-import { mockPatients } from "@/lib/mock-data"
-import { useState } from "react"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import type { Patient } from "@/lib/types"
 
 export default function NurseDashboard() {
   const [newNote, setNewNote] = useState("")
-  const assignedPatients = mockPatients // In real app, filter by assigned nurse
-  const criticalPatients = assignedPatients.filter((p) => p.status === "critical")
+  const [assignedPatients, setAssignedPatients] = useState<Patient[]>([])
+  const [criticalPatients, setCriticalPatients] = useState<Patient[]>([])
+
+  useEffect(() => {
+    if (!db) return
+    getDocs(collection(db, "patients")).then(snapshot => {
+      const patients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient))
+      setAssignedPatients(patients) // TODO: filter by assigned nurse when available
+      setCriticalPatients(patients.filter((p) => p.status === "critical"))
+    })
+  }, [])
 
   const medicineReminders = [
     { patientName: "John Smith", medicine: "Lisinopril 10mg", time: "10:00 AM", status: "pending" },

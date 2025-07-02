@@ -9,11 +9,12 @@ import DoctorDashboard from "@/components/dashboards/doctor-dashboard"
 import NurseDashboard from "@/components/dashboards/nurse-dashboard"
 import PharmacistDashboard from "@/components/dashboards/pharmacist-dashboard"
 import ReceptionistDashboard from "@/components/dashboards/receptionist-dashboard"
+import React from "react"
 
-export default function DashboardPage({ params }: { params: { role: string } }) {
+export default function DashboardPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = params
+  const { role } = React.use(params)
 
   useEffect(() => {
     if (!loading && !user) {

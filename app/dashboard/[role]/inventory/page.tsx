@@ -1,10 +1,9 @@
 "use client"
 
-import type React from "react"
+import React, { useEffect, useState } from "react"
 
 import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
 import DashboardLayout from "@/components/layout/dashboard-layout"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -21,13 +20,31 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Package, Plus, Search, AlertTriangle, CheckCircle, Edit, Trash2 } from "lucide-react"
-import { mockInventory, type InventoryItem } from "@/lib/mock-data"
+import { collection, getDocs, setDoc, doc, deleteDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import type { InventoryItem } from "@/lib/types"
 
-export default function InventoryPage({ params }: { params: { role: string } }) {
+function parseDateField(item: any): InventoryItem {
+  // Ensure lastUpdated is a Date object
+  let lastUpdated: Date
+  if (item.lastUpdated instanceof Date) {
+    lastUpdated = item.lastUpdated
+  } else if (item.lastUpdated && typeof item.lastUpdated === "object" && "seconds" in item.lastUpdated) {
+    // Firestore Timestamp
+    lastUpdated = new Date(item.lastUpdated.seconds * 1000)
+  } else if (typeof item.lastUpdated === "string") {
+    lastUpdated = new Date(item.lastUpdated)
+  } else {
+    lastUpdated = new Date()
+  }
+  return { ...item, lastUpdated }
+}
+
+export default function InventoryPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = params
-  const [inventory, setInventory] = useState<InventoryItem[]>(mockInventory)
+  const { role } = React.use(params)
+  const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -37,6 +54,16 @@ export default function InventoryPage({ params }: { params: { role: string } }) 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/")
+    }
+    if (db && user) {
+      getDocs(collection(db, "inventory")).then(snapshot => {
+        setInventory(
+          snapshot.docs.map(docSnap => {
+            const data = docSnap.data()
+            return parseDateField({ id: docSnap.id, ...data })
+          })
+        )
+      })
     }
   }, [user, loading, router])
 
@@ -82,30 +109,54 @@ export default function InventoryPage({ params }: { params: { role: string } }) 
 
   const filteredInventory = getFilteredInventory()
 
-  const handleAddItem = (newItem: Partial<InventoryItem>) => {
+  const handleAddItem = async (newItem: Partial<InventoryItem>) => {
+    if (!db) return
+    const now = new Date()
     const item: InventoryItem = {
-      id: (inventory.length + 1).toString(),
+      id: String(Date.now()),
       name: newItem.name || "",
       category: (newItem.category as "equipment" | "supplies" | "medicine") || "supplies",
-      quantity: newItem.quantity || 0,
+      quantity: typeof newItem.quantity === "number" ? newItem.quantity : 0,
       unit: newItem.unit || "",
       location: newItem.location || "",
-      lastUpdated: new Date(),
-      minThreshold: newItem.minThreshold || 0,
-      status: newItem.quantity && newItem.quantity > (newItem.minThreshold || 0) ? "available" : "low-stock",
+      lastUpdated: now,
+      minThreshold: typeof newItem.minThreshold === "number" ? newItem.minThreshold : 0,
+      status:
+        typeof newItem.quantity === "number" && typeof newItem.minThreshold === "number"
+          ? newItem.quantity === 0
+            ? "out-of-stock"
+            : newItem.quantity <= newItem.minThreshold
+              ? "low-stock"
+              : "available"
+          : "low-stock",
     }
+    await setDoc(doc(db, "inventory", item.id), {
+      ...item,
+      lastUpdated: item.lastUpdated.toISOString(),
+    })
     setInventory([...inventory, item])
     setShowAddItem(false)
   }
 
-  const handleUpdateItem = (updatedItem: InventoryItem) => {
+  const handleUpdateItem = async (updatedItem: InventoryItem) => {
+    if (!db) return
+    const now = new Date()
+    const itemToSave = { ...updatedItem, lastUpdated: now }
+    await setDoc(doc(db, "inventory", updatedItem.id), {
+      ...itemToSave,
+      lastUpdated: now.toISOString(),
+    })
     setInventory(
-      inventory.map((item) => (item.id === updatedItem.id ? { ...updatedItem, lastUpdated: new Date() } : item)),
+      inventory.map((item) =>
+        item.id === updatedItem.id ? { ...itemToSave } : item
+      )
     )
     setEditingItem(null)
   }
 
-  const handleDeleteItem = (itemId: string) => {
+  const handleDeleteItem = async (itemId: string) => {
+    if (!db) return
+    await deleteDoc(doc(db, "inventory", itemId))
     setInventory(inventory.filter((item) => item.id !== itemId))
   }
 
@@ -136,7 +187,7 @@ export default function InventoryPage({ params }: { params: { role: string } }) 
           </div>
           <Dialog open={showAddItem} onOpenChange={setShowAddItem}>
             <DialogTrigger asChild>
-              <Button>
+              <Button type="button">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Item
               </Button>
@@ -290,18 +341,27 @@ export default function InventoryPage({ params }: { params: { role: string } }) 
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-600">Last Updated</p>
-                        <p className="text-sm text-gray-900">{item.lastUpdated.toLocaleDateString()}</p>
+                        <p className="text-sm text-gray-900">
+                          {item.lastUpdated instanceof Date
+                            ? item.lastUpdated.toLocaleDateString()
+                            : new Date(item.lastUpdated).toLocaleDateString()}
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-2 ml-4">
-                    <Button variant="outline" size="sm" onClick={() => setEditingItem(item)}>
+                    <Button variant="outline" size="sm" type="button" onClick={() => setEditingItem(item)}>
                       <Edit className="mr-2 h-4 w-4" />
                       Edit
                     </Button>
                     {role === "admin" && (
-                      <Button variant="outline" size="sm" onClick={() => handleDeleteItem(item.id)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        onClick={() => handleDeleteItem(item.id)}
+                      >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete
                       </Button>
@@ -356,7 +416,14 @@ function AddItemForm({
   onCancel: () => void
   role: string
 }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    category: string
+    quantity: string
+    unit: string
+    location: string
+    minThreshold: string
+  }>({
     name: "",
     category: role === "pharmacist" ? "medicine" : "",
     quantity: "",
@@ -411,6 +478,7 @@ function AddItemForm({
             value={formData.quantity}
             onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
             required
+            min={0}
           />
         </div>
         <div className="space-y-2">
@@ -440,6 +508,7 @@ function AddItemForm({
             value={formData.minThreshold}
             onChange={(e) => setFormData({ ...formData, minThreshold: e.target.value })}
             required
+            min={0}
           />
         </div>
       </div>
@@ -464,7 +533,14 @@ function EditItemForm({
   onCancel: () => void
   role: string
 }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    category: string
+    quantity: string
+    unit: string
+    location: string
+    minThreshold: string
+  }>({
     name: item.name,
     category: item.category,
     quantity: item.quantity.toString(),
@@ -475,18 +551,20 @@ function EditItemForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const quantityNum = Number.parseInt(formData.quantity) || 0
+    const minThresholdNum = Number.parseInt(formData.minThreshold) || 0
     const updatedItem: InventoryItem = {
       ...item,
       name: formData.name,
       category: formData.category as "equipment" | "supplies" | "medicine",
-      quantity: Number.parseInt(formData.quantity) || 0,
+      quantity: quantityNum,
       unit: formData.unit,
       location: formData.location,
-      minThreshold: Number.parseInt(formData.minThreshold) || 0,
+      minThreshold: minThresholdNum,
       status:
-        Number.parseInt(formData.quantity) === 0
+        quantityNum === 0
           ? "out-of-stock"
-          : Number.parseInt(formData.quantity) <= Number.parseInt(formData.minThreshold)
+          : quantityNum <= minThresholdNum
             ? "low-stock"
             : "available",
     }
@@ -530,6 +608,7 @@ function EditItemForm({
             value={formData.quantity}
             onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
             required
+            min={0}
           />
         </div>
         <div className="space-y-2">
@@ -558,6 +637,7 @@ function EditItemForm({
             value={formData.minThreshold}
             onChange={(e) => setFormData({ ...formData, minThreshold: e.target.value })}
             required
+            min={0}
           />
         </div>
       </div>

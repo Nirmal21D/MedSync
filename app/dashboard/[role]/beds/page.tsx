@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import * as React from "react"
 import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -13,13 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Bed, Search, User, MapPin, Calendar, Settings, UserPlus, UserMinus, Wrench } from "lucide-react"
-import { mockBeds, mockPatients, type Bed as BedType } from "@/lib/mock-data"
+import { collection, getDocs, setDoc, doc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import type { Bed as BedType, Patient } from "@/lib/types"
 
-export default function BedManagementPage({ params }: { params: { role: string } }) {
+export default function BedManagementPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = params
-  const [beds, setBeds] = useState<BedType[]>(mockBeds)
+  const { role } = React.use(params)
+  const [beds, setBeds] = useState<BedType[]>([])
+  const [patients, setPatients] = useState<Patient[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [wardFilter, setWardFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -30,6 +33,14 @@ export default function BedManagementPage({ params }: { params: { role: string }
   useEffect(() => {
     if (!loading && !user) {
       router.push("/")
+    }
+    if (db) {
+      getDocs(collection(db, "beds")).then(snapshot => {
+        setBeds(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BedType)))
+      })
+      getDocs(collection(db, "patients")).then(snapshot => {
+        setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)))
+      })
     }
   }, [user, loading, router])
 
@@ -77,23 +88,38 @@ export default function BedManagementPage({ params }: { params: { role: string }
   const filteredBeds = getFilteredBeds()
   const wards = [...new Set(beds.map((bed) => bed.ward))]
 
-  const handleAssignPatient = (bedId: string, patientId: string, patientName: string) => {
+  const handleAssignPatient = async (bedId: string, patientId: string, patientName: string) => {
+    if (!db) return
     setBeds(
       beds.map((bed) => (bed.id === bedId ? { ...bed, status: "occupied" as const, patientId, patientName } : bed)),
     )
+    await setDoc(doc(db, "beds", bedId), {
+      ...beds.find((bed) => bed.id === bedId),
+      status: "occupied",
+      patientId,
+      patientName,
+    })
     setShowAssignPatient(false)
     setSelectedBed(null)
   }
 
-  const handleDischargePatient = (bedId: string) => {
+  const handleDischargePatient = async (bedId: string) => {
+    if (!db) return
     setBeds(
       beds.map((bed) =>
         bed.id === bedId ? { ...bed, status: "available" as const, patientId: undefined, patientName: undefined } : bed,
       ),
     )
+    await setDoc(doc(db, "beds", bedId), {
+      ...beds.find((bed) => bed.id === bedId),
+      status: "available",
+      patientId: undefined,
+      patientName: undefined,
+    })
   }
 
-  const handleMaintenanceToggle = (bedId: string) => {
+  const handleMaintenanceToggle = async (bedId: string) => {
+    if (!db) return
     setBeds(
       beds.map((bed) =>
         bed.id === bedId
@@ -101,6 +127,13 @@ export default function BedManagementPage({ params }: { params: { role: string }
           : bed,
       ),
     )
+    const bed = beds.find((bed) => bed.id === bedId)
+    if (bed) {
+      await setDoc(doc(db, "beds", bedId), {
+        ...bed,
+        status: bed.status === "maintenance" ? "available" : "maintenance",
+      })
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -411,7 +444,7 @@ function AssignPatientForm({
 }) {
   const [selectedPatient, setSelectedPatient] = useState("")
 
-  const availablePatients = mockPatients.filter((p) => !p.assignedBed)
+  const availablePatients = patients.filter((p) => !p.assignedBed)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

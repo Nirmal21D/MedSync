@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -7,8 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Users, Calendar, Bed, Plus, Clock, Phone } from "lucide-react"
-import { mockPatients, mockAppointments, mockStaff } from "@/lib/mock-data"
-import { useState } from "react"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import type { Patient, Appointment, Staff } from "@/lib/types"
 
 export default function ReceptionistDashboard() {
   const [showAddPatient, setShowAddPatient] = useState(false)
@@ -20,13 +22,29 @@ export default function ReceptionistDashboard() {
     address: "",
     assignedDoctor: "",
   })
+  const [patients, setPatients] = useState<Patient[]>([])
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [staff, setStaff] = useState<Staff[]>([])
+  const availableBeds = 25 // Still static unless you want to fetch from Firestore
 
-  const todayAppointments = mockAppointments.filter(
+  useEffect(() => {
+    if (!db) return
+    getDocs(collection(db, "patients")).then(snapshot => {
+      setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)))
+    })
+    getDocs(collection(db, "appointments")).then(snapshot => {
+      setAppointments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment)))
+    })
+    getDocs(collection(db, "users")).then(snapshot => {
+      setStaff(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff)))
+    })
+  }, [])
+
+  const todayAppointments = appointments.filter(
     (a) => new Date(a.date).toDateString() === new Date().toDateString(),
   )
-  const availableBeds = 25 // Mock data
-  const occupiedBeds = mockPatients.filter((p) => p.assignedBed).length
-  const doctors = mockStaff.filter((s) => s.role === "doctor")
+  const occupiedBeds = patients.filter((p) => p.assignedBed).length
+  const doctors = staff.filter((s) => s.role === "doctor")
 
   const handleAddPatient = () => {
     // In real app, save to database
@@ -57,7 +75,7 @@ export default function ReceptionistDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockPatients.length}</div>
+            <div className="text-2xl font-bold">{patients.length}</div>
             <p className="text-xs text-muted-foreground">Registered patients</p>
           </CardContent>
         </Card>
@@ -314,7 +332,7 @@ export default function ReceptionistDashboard() {
 
           <div className="space-y-2">
             <h4 className="font-medium">Occupied Beds</h4>
-            {mockPatients
+            {patients
               .filter((p) => p.assignedBed)
               .map((patient) => (
                 <div key={patient.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
@@ -342,7 +360,7 @@ export default function ReceptionistDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {mockPatients.slice(0, 5).map((patient) => (
+            {patients.slice(0, 5).map((patient) => (
               <div key={patient.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div>
                   <p className="font-medium">{patient.name}</p>

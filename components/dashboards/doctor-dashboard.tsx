@@ -1,20 +1,48 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Users, Calendar, FileText, Clock, AlertCircle, Plus } from "lucide-react"
-import { mockPatients, mockAppointments, mockPrescriptions } from "@/lib/mock-data"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import type { Patient, Appointment, Prescription } from "@/lib/types"
 
 export default function DoctorDashboard() {
-  const myPatients = mockPatients.filter((p) => p.assignedDoctor === "Dr. Sarah Johnson")
-  const todayAppointments = mockAppointments.filter(
-    (a) => a.doctorName === "Dr. Sarah Johnson" && new Date(a.date).toDateString() === new Date().toDateString(),
-  )
-  const pendingPrescriptions = mockPrescriptions.filter(
-    (p) => p.doctorName === "Dr. Sarah Johnson" && p.status === "pending",
-  )
-  const criticalPatients = myPatients.filter((p) => p.status === "critical")
+  const [myPatients, setMyPatients] = useState<Patient[]>([])
+  const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([])
+  const [pendingPrescriptions, setPendingPrescriptions] = useState<Prescription[]>([])
+  const [criticalPatients, setCriticalPatients] = useState<Patient[]>([])
+  const doctorName = "Dr. Sarah Johnson" // TODO: Replace with logged-in user's name
+
+  useEffect(() => {
+    if (!db) return
+    // Fetch patients
+    getDocs(collection(db, "patients")).then(snapshot => {
+      const patients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient))
+      const mine = patients.filter((p) => p.assignedDoctor === doctorName)
+      setMyPatients(mine)
+      setCriticalPatients(mine.filter((p) => p.status === "critical"))
+    })
+    // Fetch appointments
+    getDocs(collection(db, "appointments")).then(snapshot => {
+      const today = new Date().toDateString()
+      const appointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment))
+      setTodayAppointments(
+        appointments.filter(
+          (a) => a.doctorName === doctorName && new Date(a.date).toDateString() === today
+        )
+      )
+    })
+    // Fetch prescriptions
+    getDocs(collection(db, "prescriptions")).then(snapshot => {
+      const prescriptions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Prescription))
+      setPendingPrescriptions(
+        prescriptions.filter((p) => p.doctorName === doctorName && p.status === "pending")
+      )
+    })
+  }, [])
 
   return (
     <div className="space-y-6">

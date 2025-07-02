@@ -21,13 +21,16 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { FileText, Plus, Search, Clock, User, Tag, AlertCircle, CheckCircle } from "lucide-react"
-import { mockNursingNotes, mockPatients, type NursingNote } from "@/lib/mock-data"
+import { collection, getDocs, setDoc, doc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import type { NursingNote, Patient } from "@/lib/types"
 
-export default function NursingNotesPage({ params }: { params: { role: string } }) {
+export default function NursingNotesPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = params
-  const [notes, setNotes] = useState<NursingNote[]>(mockNursingNotes)
+  const { role } = React.use(params)
+  const [notes, setNotes] = useState<NursingNote[]>([])
+  const [patients, setPatients] = useState<Patient[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [shiftFilter, setShiftFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
@@ -37,6 +40,14 @@ export default function NursingNotesPage({ params }: { params: { role: string } 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/")
+    }
+    if (db) {
+      getDocs(collection(db, "nursingNotes")).then(snapshot => {
+        setNotes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NursingNote)))
+      })
+      getDocs(collection(db, "patients")).then(snapshot => {
+        setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)))
+      })
     }
   }, [user, loading, router])
 
@@ -83,9 +94,10 @@ export default function NursingNotesPage({ params }: { params: { role: string } 
 
   const filteredNotes = getFilteredNotes()
 
-  const handleAddNote = (newNote: Partial<NursingNote>) => {
+  const handleAddNote = async (newNote: Partial<NursingNote>) => {
+    if (!db) return
     const note: NursingNote = {
-      id: (notes.length + 1).toString(),
+      id: String(Date.now()),
       patientId: newNote.patientId || "",
       patientName: newNote.patientName || "",
       nurseId: "nurse1",
@@ -97,6 +109,7 @@ export default function NursingNotesPage({ params }: { params: { role: string } 
       priority: (newNote.priority as "low" | "medium" | "high") || "medium",
       tags: newNote.tags || [],
     }
+    await setDoc(doc(db, "nursingNotes", note.id), note)
     setNotes([note, ...notes])
     setShowAddNote(false)
   }
@@ -149,7 +162,7 @@ export default function NursingNotesPage({ params }: { params: { role: string } 
                 <DialogTitle>Add Nursing Note</DialogTitle>
                 <DialogDescription>Document patient care or observations</DialogDescription>
               </DialogHeader>
-              <AddNoteForm onSubmit={handleAddNote} onCancel={() => setShowAddNote(false)} />
+              <AddNoteForm onSubmit={handleAddNote} onCancel={() => setShowAddNote(false)} patients={patients as Patient[]} />
             </DialogContent>
           </Dialog>
         </div>
@@ -338,9 +351,11 @@ export default function NursingNotesPage({ params }: { params: { role: string } 
 function AddNoteForm({
   onSubmit,
   onCancel,
+  patients,
 }: {
   onSubmit: (note: Partial<NursingNote>) => void
   onCancel: () => void
+  patients: Patient[]
 }) {
   const [formData, setFormData] = useState({
     patientName: "",
@@ -355,6 +370,9 @@ function AddNoteForm({
     e.preventDefault()
     onSubmit({
       ...formData,
+      shift: formData.shift as "morning" | "afternoon" | "night",
+      type: formData.type as "general" | "medication" | "vitals" | "observation" | "handover",
+      priority: formData.priority as "low" | "medium" | "high",
       tags: formData.tags
         .split(",")
         .map((tag) => tag.trim())
@@ -375,7 +393,7 @@ function AddNoteForm({
               <SelectValue placeholder="Select patient" />
             </SelectTrigger>
             <SelectContent>
-              {mockPatients.map((patient) => (
+              {patients.map((patient: Patient) => (
                 <SelectItem key={patient.id} value={patient.name}>
                   {patient.name} - {patient.diagnosis}
                 </SelectItem>

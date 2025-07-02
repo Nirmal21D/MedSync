@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import * as React from "react"
 
 import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
@@ -22,13 +22,15 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Search, Plus, Eye, FileText, Heart, Phone, MapPin, Calendar, Activity } from "lucide-react"
-import { mockPatients, type Patient } from "@/lib/mock-data"
+import { collection, getDocs, setDoc, doc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import type { Patient } from "@/lib/types"
 
-export default function PatientsPage({ params }: { params: { role: string } }) {
+export default function PatientsPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = params
-  const [patients, setPatients] = useState<Patient[]>(mockPatients)
+  const { role } = React.use(params)
+  const [patients, setPatients] = useState<Patient[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
@@ -37,6 +39,11 @@ export default function PatientsPage({ params }: { params: { role: string } }) {
   useEffect(() => {
     if (!loading && !user) {
       router.push("/")
+    }
+    if (db) {
+      getDocs(collection(db, "patients")).then(snapshot => {
+        setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)))
+      })
     }
   }, [user, loading, router])
 
@@ -81,9 +88,10 @@ export default function PatientsPage({ params }: { params: { role: string } }) {
 
   const filteredPatients = getFilteredPatients()
 
-  const handleAddPatient = (newPatient: Partial<Patient>) => {
+  const handleAddPatient = async (newPatient: Partial<Patient>) => {
+    if (!db) return
     const patient: Patient = {
-      id: (patients.length + 1).toString(),
+      id: String(Date.now()),
       name: newPatient.name || "",
       age: newPatient.age || 0,
       gender: (newPatient.gender as "male" | "female" | "other") || "male",
@@ -104,6 +112,7 @@ export default function PatientsPage({ params }: { params: { role: string } }) {
       status: "admitted",
       nursingNotes: [],
     }
+    await setDoc(doc(db, "patients", patient.id), patient)
     setPatients([...patients, patient])
     setShowAddPatient(false)
   }
@@ -363,6 +372,7 @@ function AddPatientForm({
     onSubmit({
       ...formData,
       age: Number.parseInt(formData.age) || 0,
+      gender: formData.gender as "male" | "female" | "other"
     })
   }
 
@@ -577,7 +587,7 @@ function PatientDetailsModal({ patient, role }: { patient: Patient; role: string
             <div className="space-y-2">
               {patient.nursingNotes.map((note, index) => (
                 <div key={index} className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm">{note}</p>
+                  <p className="text-sm">{typeof note === "string" ? note : note.content}</p>
                 </div>
               ))}
             </div>

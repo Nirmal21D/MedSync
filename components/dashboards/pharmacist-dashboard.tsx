@@ -1,18 +1,31 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Package, AlertTriangle, CheckCircle, Clock, X } from "lucide-react"
-import { mockPrescriptions, mockInventory } from "@/lib/mock-data"
-import { useState } from "react"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import type { Prescription, InventoryItem } from "@/lib/types"
 
 export default function PharmacistDashboard() {
-  const [prescriptions, setPrescriptions] = useState(mockPrescriptions)
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
+  const [inventory, setInventory] = useState<InventoryItem[]>([])
+
+  useEffect(() => {
+    if (!db) return
+    getDocs(collection(db, "prescriptions")).then(snapshot => {
+      setPrescriptions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Prescription)))
+    })
+    getDocs(collection(db, "inventory")).then(snapshot => {
+      setInventory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem)))
+    })
+  }, [])
 
   const pendingPrescriptions = prescriptions.filter((p) => p.status === "pending")
   const approvedPrescriptions = prescriptions.filter((p) => p.status === "approved")
-  const medicineInventory = mockInventory.filter((i) => i.category === "medicine")
+  const medicineInventory = inventory.filter((i) => i.category === "medicine")
   const lowStockMedicines = medicineInventory.filter((i) => i.status === "low-stock" || i.status === "out-of-stock")
 
   const handleApprovePrescription = (prescriptionId: string) => {

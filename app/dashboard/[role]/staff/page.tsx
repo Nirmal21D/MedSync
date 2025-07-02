@@ -1,10 +1,9 @@
 "use client"
 
-import type React from "react"
+import React, { useEffect, useState } from "react"
 
 import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
 import DashboardLayout from "@/components/layout/dashboard-layout"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -21,13 +20,15 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Users, Plus, Search, Mail, Phone, Calendar, Edit, Trash2, UserCheck, UserX } from "lucide-react"
-import { mockStaff, type Staff } from "@/lib/mock-data"
+import { collection, getDocs, setDoc, doc, deleteDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import type { Staff } from "@/lib/types"
 
 export default function StaffPage({ params }: { params: { role: string } }) {
   const { user, loading } = useAuth()
   const router = useRouter()
   const { role } = params
-  const [staff, setStaff] = useState<Staff[]>(mockStaff)
+  const [staff, setStaff] = useState<Staff[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -37,6 +38,32 @@ export default function StaffPage({ params }: { params: { role: string } }) {
   useEffect(() => {
     if (!loading && !user) {
       router.push("/")
+    }
+    if (db) {
+      getDocs(collection(db, "users")).then(snapshot => {
+        setStaff(
+          snapshot.docs.map(docSnap => {
+            const data = docSnap.data()
+            // Ensure joinDate is a Date object
+            let joinDate: Date
+            if (data.joinDate instanceof Date) {
+              joinDate = data.joinDate
+            } else if (data.joinDate && data.joinDate.seconds) {
+              // Firestore Timestamp
+              joinDate = new Date(data.joinDate.seconds * 1000)
+            } else if (typeof data.joinDate === "string") {
+              joinDate = new Date(data.joinDate)
+            } else {
+              joinDate = new Date()
+            }
+            return {
+              id: docSnap.id,
+              ...data,
+              joinDate,
+            } as Staff
+          })
+        )
+      })
     }
   }, [user, loading, router])
 
@@ -85,9 +112,10 @@ export default function StaffPage({ params }: { params: { role: string } }) {
 
   const filteredStaff = getFilteredStaff()
 
-  const handleAddStaff = (newStaff: Partial<Staff>) => {
+  const handleAddStaff = async (newStaff: Partial<Staff>) => {
+    if (!db) return
     const staffMember: Staff = {
-      id: (staff.length + 1).toString(),
+      id: String(Date.now()),
       name: newStaff.name || "",
       email: newStaff.email || "",
       role: (newStaff.role as "admin" | "doctor" | "nurse" | "pharmacist" | "receptionist") || "doctor",
@@ -97,21 +125,46 @@ export default function StaffPage({ params }: { params: { role: string } }) {
       status: "active",
       joinDate: new Date(),
     }
+    await setDoc(doc(db, "users", staffMember.id), {
+      ...staffMember,
+      // Firestore does not support Date, so store as ISO string
+      joinDate: staffMember.joinDate.toISOString(),
+    })
     setStaff([...staff, staffMember])
     setShowAddStaff(false)
   }
 
-  const handleUpdateStaff = (updatedStaff: Staff) => {
+  const handleUpdateStaff = async (updatedStaff: Staff) => {
+    if (!db) return
+    await setDoc(doc(db, "users", updatedStaff.id), {
+      ...updatedStaff,
+      joinDate: updatedStaff.joinDate instanceof Date
+        ? updatedStaff.joinDate.toISOString()
+        : updatedStaff.joinDate,
+    })
     setStaff(staff.map((s) => (s.id === updatedStaff.id ? updatedStaff : s)))
     setEditingStaff(null)
   }
 
-  const handleDeleteStaff = (staffId: string) => {
+  const handleDeleteStaff = async (staffId: string) => {
+    if (!db) return
+    await deleteDoc(doc(db, "users", staffId))
     setStaff(staff.filter((s) => s.id !== staffId))
   }
 
-  const handleStatusToggle = (staffId: string) => {
-    setStaff(staff.map((s) => (s.id === staffId ? { ...s, status: s.status === "active" ? "inactive" : "active" } : s)))
+  const handleStatusToggle = async (staffId: string) => {
+    if (!db) return
+    const staffMember = staff.find((s) => s.id === staffId)
+    if (!staffMember) return
+    const updatedStatus = staffMember.status === "active" ? "inactive" : "active"
+    const updatedStaffMember = { ...staffMember, status: updatedStatus }
+    await setDoc(doc(db, "users", staffId), {
+      ...updatedStaffMember,
+      joinDate: updatedStaffMember.joinDate instanceof Date
+        ? updatedStaffMember.joinDate.toISOString()
+        : updatedStaffMember.joinDate,
+    })
+    setStaff(staff.map((s) => (s.id === staffId ? updatedStaffMember : s)))
   }
 
   return (
@@ -282,7 +335,9 @@ export default function StaffPage({ params }: { params: { role: string } }) {
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <Calendar className="mr-2 h-4 w-4" />
-                        Joined: {staffMember.joinDate.toLocaleDateString()}
+                        Joined: {staffMember.joinDate instanceof Date
+                          ? staffMember.joinDate.toLocaleDateString()
+                          : new Date(staffMember.joinDate).toLocaleDateString()}
                       </div>
                     </div>
 

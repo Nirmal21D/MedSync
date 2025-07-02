@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import * as React from "react"
 
 import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
@@ -22,13 +22,16 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { FileText, Plus, Search, CheckCircle, X, Clock, User, Calendar, Pill } from "lucide-react"
-import { mockPrescriptions, mockPatients, type Prescription } from "@/lib/mock-data"
+import { collection, getDocs, setDoc, doc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import type { Prescription, Patient } from "@/lib/types"
 
-export default function PrescriptionsPage({ params }: { params: { role: string } }) {
+export default function PrescriptionsPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = params
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>(mockPrescriptions)
+  const { role } = React.use(params)
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
+  const [patients, setPatients] = useState<Patient[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [showAddPrescription, setShowAddPrescription] = useState(false)
@@ -36,6 +39,14 @@ export default function PrescriptionsPage({ params }: { params: { role: string }
   useEffect(() => {
     if (!loading && !user) {
       router.push("/")
+    }
+    if (db) {
+      getDocs(collection(db, "prescriptions")).then(snapshot => {
+        setPrescriptions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Prescription)))
+      })
+      getDocs(collection(db, "patients")).then(snapshot => {
+        setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)))
+      })
     }
   }, [user, loading, router])
 
@@ -79,9 +90,10 @@ export default function PrescriptionsPage({ params }: { params: { role: string }
 
   const filteredPrescriptions = getFilteredPrescriptions()
 
-  const handleAddPrescription = (newPrescription: Partial<Prescription>) => {
+  const handleAddPrescription = async (newPrescription: Partial<Prescription>) => {
+    if (!db) return
     const prescription: Prescription = {
-      id: (prescriptions.length + 1).toString(),
+      id: String(Date.now()),
       patientId: newPrescription.patientId || "",
       patientName: newPrescription.patientName || "",
       doctorId: "doc1",
@@ -91,28 +103,33 @@ export default function PrescriptionsPage({ params }: { params: { role: string }
       notes: newPrescription.notes,
       createdAt: new Date(),
     }
+    await setDoc(doc(db, "prescriptions", prescription.id), prescription)
     setPrescriptions([...prescriptions, prescription])
     setShowAddPrescription(false)
   }
 
-  const handleStatusChange = (
+  const handleStatusChange = async (
     prescriptionId: string,
     newStatus: "pending" | "approved" | "rejected",
     notes?: string,
   ) => {
-    setPrescriptions(
-      prescriptions.map((p) =>
-        p.id === prescriptionId
-          ? {
-              ...p,
-              status: newStatus,
-              processedAt: new Date(),
-              processedBy: "Current User",
-              notes: notes || p.notes,
-            }
-          : p,
-      ),
+    if (!db) return
+    const updatedPrescriptions = prescriptions.map((p) =>
+      p.id === prescriptionId
+        ? {
+            ...p,
+            status: newStatus,
+            processedAt: new Date(),
+            processedBy: "Current User",
+            notes: notes || p.notes,
+          }
+        : p,
     )
+    const updated = updatedPrescriptions.find((p) => p.id === prescriptionId)
+    if (updated) {
+      await setDoc(doc(db, "prescriptions", prescriptionId), updated)
+    }
+    setPrescriptions(updatedPrescriptions)
   }
 
   return (
@@ -354,6 +371,7 @@ function AddPrescriptionForm({
   onSubmit,
   onCancel,
 }: { onSubmit: (prescription: Partial<Prescription>) => void; onCancel: () => void }) {
+  const { patients } = useAuth()
   const [formData, setFormData] = useState({
     patientName: "",
     notes: "",
@@ -398,7 +416,7 @@ function AddPrescriptionForm({
             <SelectValue placeholder="Select patient" />
           </SelectTrigger>
           <SelectContent>
-            {mockPatients.map((patient) => (
+            {patients.map((patient) => (
               <SelectItem key={patient.id} value={patient.name}>
                 {patient.name} - {patient.diagnosis}
               </SelectItem>
