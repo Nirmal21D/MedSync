@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Users, Calendar, Bed, Plus, Clock, Phone } from "lucide-react"
-import { collection, getDocs } from "firebase/firestore"
+import { Users, Calendar, Bed, Plus, Clock, Phone, Trash, Pencil } from "lucide-react"
+import { collection, getDocs, addDoc, setDoc, doc, deleteDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Patient, Appointment, Staff } from "@/lib/types"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { DialogTrigger } from "@/components/ui/dialog"
 
 // Utility to safely format a date value
 function formatDate(dateValue: any) {
@@ -41,7 +43,13 @@ export default function ReceptionistDashboard() {
   const [patients, setPatients] = useState<Patient[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [staff, setStaff] = useState<Staff[]>([])
-  const availableBeds = 25 // Still static unless you want to fetch from Firestore
+  const [beds, setBeds] = useState<any[]>([])
+  const [showAssignBed, setShowAssignBed] = useState(false)
+  const [selectedBedId, setSelectedBedId] = useState("")
+  const [selectedPatientId, setSelectedPatientId] = useState("")
+  const [editPatient, setEditPatient] = useState<Patient | null>(null)
+  const [showDeletePatient, setShowDeletePatient] = useState<Patient | null>(null)
+  const [patientSearch, setPatientSearch] = useState("")
 
   useEffect(() => {
     if (!db) return
@@ -54,36 +62,106 @@ export default function ReceptionistDashboard() {
     getDocs(collection(db, "users")).then(snapshot => {
       setStaff(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff)))
     })
+    getDocs(collection(db, "beds")).then(snapshot => {
+      setBeds(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+    })
   }, [])
 
   const todayAppointments = appointments.filter(
     (a) => {
       // Defensive: ensure a.date is a valid date
-      const apptDate = a.date instanceof Date
-        ? a.date
-        : typeof a.date === "string" || typeof a.date === "number"
-          ? new Date(a.date)
-          : a.date && a.date.seconds
-            ? new Date(a.date.seconds * 1000)
-            : null
-      return apptDate && apptDate.toDateString() === new Date().toDateString()
+      let apptDate: Date | null = null;
+      if (a.date instanceof Date) {
+        apptDate = a.date;
+      } else if (typeof a.date === "string" || typeof a.date === "number") {
+        apptDate = new Date(a.date);
+      } else if (a.date && typeof a.date === "object" && 'seconds' in a.date) {
+        // Firestore Timestamp
+        apptDate = new Date((a.date as { seconds: number }).seconds * 1000);
+      }
+      return apptDate && apptDate.toDateString() === new Date().toDateString();
     }
   )
   const occupiedBeds = patients.filter((p) => p.assignedBed).length
   const doctors = staff.filter((s) => s.role === "doctor")
 
-  const handleAddPatient = () => {
-    // In real app, save to database
-    console.log("Adding new patient:", newPatient)
-    setNewPatient({
-      name: "",
-      age: "",
-      gender: "",
-      phone: "",
-      address: "",
-      assignedDoctor: "",
+  const availableBedsList = beds.filter((b) => b.status === "available")
+  const unassignedPatients = patients.filter((p) => !p.assignedBed)
+
+  const filteredPatients = patients.filter((p) =>
+    p.name.toLowerCase().includes(patientSearch.toLowerCase())
+  )
+
+  const handleAddPatient = async () => {
+    if (!db) return;
+    // Validate required fields
+    if (!newPatient.name || !newPatient.age || !newPatient.gender || !newPatient.assignedDoctor) {
+      alert("Please fill all required fields, including assigning a doctor.");
+      return;
+    }
+    try {
+      await addDoc(collection(db, "patients"), {
+        ...newPatient,
+        age: Number(newPatient.age),
+        createdAt: new Date(),
+      });
+      // Refresh patient list
+      const snapshot = await getDocs(collection(db, "patients"));
+      setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)));
+      setNewPatient({
+        name: "",
+        age: "",
+        gender: "",
+        phone: "",
+        address: "",
+        assignedDoctor: "",
+      });
+      setShowAddPatient(false);
+    } catch (err) {
+      alert("Failed to add patient. Please try again.");
+    }
+  }
+
+  const handleAssignBed = async () => {
+    if (!db || !selectedBedId || !selectedPatientId) return
+    const bed = beds.find((b) => b.id === selectedBedId)
+    const patient = patients.find((p) => p.id === selectedPatientId)
+    if (!bed || !patient) return
+    // Update bed in Firestore
+    await setDoc(doc(db, "beds", bed.id), {
+      ...bed,
+      status: "occupied",
+      patientId: patient.id,
+      patientName: patient.name,
     })
-    setShowAddPatient(false)
+    // Optionally update patient in Firestore
+    await setDoc(doc(db, "patients", patient.id), {
+      ...patient,
+      assignedBed: bed.number,
+    }, { merge: true })
+    // Refresh lists
+    const bedsSnap = await getDocs(collection(db, "beds"))
+    setBeds(bedsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+    const patientsSnap = await getDocs(collection(db, "patients"))
+    setPatients(patientsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)));
+    setShowAssignBed(false)
+    setSelectedBedId("")
+    setSelectedPatientId("")
+  }
+
+  const handleUpdatePatient = async (updated: Patient) => {
+    if (!db) return
+    await setDoc(doc(db, "patients", updated.id), updated, { merge: true })
+    const snapshot = await getDocs(collection(db, "patients"))
+    setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)))
+    setEditPatient(null)
+  }
+
+  const handleDeletePatient = async (patient: Patient) => {
+    if (!db) return
+    await deleteDoc(doc(db, "patients", patient.id))
+    setPatients(patients.filter((p) => p.id !== patient.id))
+    setShowDeletePatient(null)
   }
 
   return (
@@ -123,8 +201,8 @@ export default function ReceptionistDashboard() {
             <Bed className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{availableBeds - occupiedBeds}</div>
-            <p className="text-xs text-muted-foreground">Out of {availableBeds} total</p>
+            <div className="text-2xl font-bold">{availableBedsList.length}</div>
+            <p className="text-xs text-muted-foreground">Out of {beds.length} total</p>
           </CardContent>
         </Card>
 
@@ -178,7 +256,7 @@ export default function ReceptionistDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full bg-transparent">
+            <Button variant="outline" className="w-full bg-transparent" onClick={() => setShowAssignBed(true)}>
               Manage Beds
             </Button>
           </CardContent>
@@ -343,35 +421,44 @@ export default function ReceptionistDashboard() {
           <CardDescription>Current bed occupancy status</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">{availableBeds - occupiedBeds}</p>
-              <p className="text-sm text-green-700">Available</p>
+          {beds.length === 0 ? (
+            <div className="text-center text-red-500 font-semibold py-8">
+              No beds found in the system.<br />
+              Please add beds in Firestore to see them here.
             </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">{occupiedBeds}</p>
-              <p className="text-sm text-blue-700">Occupied</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-600">{availableBeds}</p>
-              <p className="text-sm text-gray-700">Total</p>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="font-medium">Occupied Beds</h4>
-            {patients
-              .filter((p) => p.assignedBed)
-              .map((patient) => (
-                <div key={patient.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <div>
-                    <p className="font-medium">{patient.name}</p>
-                    <p className="text-sm text-gray-600">{patient.diagnosis}</p>
-                  </div>
-                  <Badge variant="outline">{patient.assignedBed}</Badge>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <p className="text-2xl font-bold text-green-600">{availableBedsList.length}</p>
+                  <p className="text-sm text-green-700">Available</p>
                 </div>
-              ))}
-          </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <p className="text-2xl font-bold text-blue-600">{occupiedBeds}</p>
+                  <p className="text-sm text-blue-700">Occupied</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-2xl font-bold text-gray-600">{beds.length}</p>
+                  <p className="text-sm text-gray-700">Total</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Occupied Beds</h4>
+                {patients
+                  .filter((p) => p.assignedBed)
+                  .map((patient) => (
+                    <div key={patient.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div>
+                        <p className="font-medium">{patient.name}</p>
+                        <p className="text-sm text-gray-600">{patient.diagnosis}</p>
+                      </div>
+                      <Badge variant="outline">{patient.assignedBed}</Badge>
+                    </div>
+                  ))}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -387,8 +474,14 @@ export default function ReceptionistDashboard() {
           <CardDescription>Recently registered patients</CardDescription>
         </CardHeader>
         <CardContent>
+          <Input
+            placeholder="Search patients by name..."
+            value={patientSearch}
+            onChange={e => setPatientSearch(e.target.value)}
+            className="mb-4 w-full"
+          />
           <div className="space-y-3">
-            {patients.slice(0, 5).map((patient) => (
+            {filteredPatients.slice(0, 5).map((patient) => (
               <div key={patient.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div>
                   <p className="font-medium">{patient.name}</p>
@@ -399,10 +492,8 @@ export default function ReceptionistDashboard() {
                     <Phone className="h-3 w-3 mr-1" />
                     {patient.phone}
                   </p>
-                  {/* Example: Show registration date safely if available */}
-                  {/* <p className="text-xs text-gray-400">Registered: {formatDate(patient.registeredAt)}</p> */}
                 </div>
-                <div className="text-right">
+                <div className="text-right flex flex-col gap-2 items-end">
                   <p className="text-sm text-gray-600">{patient.assignedDoctor}</p>
                   <Badge
                     variant={
@@ -415,12 +506,135 @@ export default function ReceptionistDashboard() {
                   >
                     {patient.status}
                   </Badge>
+                  <div className="flex gap-2 mt-2">
+                    <Button size="icon" variant="ghost" onClick={() => setEditPatient(patient)} title="Edit patient">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => setShowDeletePatient(patient)} title="Delete patient">
+                      <Trash className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Patient Modal */}
+      {editPatient && (
+        <Dialog open={!!editPatient} onOpenChange={() => setEditPatient(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Patient</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Label>Name</Label>
+              <Input value={editPatient.name} onChange={e => setEditPatient({ ...editPatient, name: e.target.value })} />
+              <Label>Age</Label>
+              <Input type="number" value={editPatient.age} onChange={e => setEditPatient({ ...editPatient, age: Number(e.target.value) })} />
+              <Label>Gender</Label>
+              <Select value={editPatient.gender} onValueChange={value => setEditPatient({ ...editPatient, gender: value as any })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              <Label>Phone</Label>
+              <Input value={editPatient.phone} onChange={e => setEditPatient({ ...editPatient, phone: e.target.value })} />
+              <Label>Address</Label>
+              <Input value={editPatient.address} onChange={e => setEditPatient({ ...editPatient, address: e.target.value })} />
+              <Label>Assigned Doctor</Label>
+              <Select value={editPatient.assignedDoctor} onValueChange={value => setEditPatient({ ...editPatient, assignedDoctor: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select doctor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {doctors.map((doctor) => (
+                    <SelectItem key={doctor.id} value={doctor.name}>
+                      {doctor.name} - {doctor.specialization}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setEditPatient(null)}>Cancel</Button>
+                <Button onClick={() => handleUpdatePatient(editPatient)}>Save</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Delete Patient Confirmation */}
+      {showDeletePatient && (
+        <Dialog open={!!showDeletePatient} onOpenChange={() => setShowDeletePatient(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Patient</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">Are you sure you want to delete <b>{showDeletePatient.name}</b>?</div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowDeletePatient(null)}>Cancel</Button>
+              <Button variant="destructive" onClick={() => handleDeletePatient(showDeletePatient)}>Delete</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Assign Bed Modal */}
+      <Dialog open={showAssignBed} onOpenChange={setShowAssignBed}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Bed to Patient</DialogTitle>
+            <DialogDescription>Select an available bed and a patient to assign.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Available Bed</Label>
+              <Select value={selectedBedId} onValueChange={setSelectedBedId} disabled={availableBedsList.length === 0}>
+                <SelectTrigger>
+                  <SelectValue placeholder={availableBedsList.length === 0 ? "No beds available" : "Select bed"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableBedsList.length === 0 ? (
+                    <div className="px-4 py-2 text-gray-500">No available beds</div>
+                  ) : (
+                    availableBedsList.map((bed) => (
+                      <SelectItem key={bed.id} value={bed.id}>{bed.number} ({bed.ward})</SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Patient</Label>
+              <Select value={selectedPatientId} onValueChange={setSelectedPatientId} disabled={unassignedPatients.length === 0}>
+                <SelectTrigger>
+                  <SelectValue placeholder={unassignedPatients.length === 0 ? "No unassigned patients" : "Select patient"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {unassignedPatients.length === 0 ? (
+                    <div className="px-4 py-2 text-gray-500">No unassigned patients</div>
+                  ) : (
+                    unassignedPatients.map((patient) => (
+                      <SelectItem key={patient.id} value={patient.id}>{patient.name} ({patient.age} yrs)</SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowAssignBed(false)}>Cancel</Button>
+              <Button onClick={handleAssignBed} disabled={!selectedBedId || !selectedPatientId || availableBedsList.length === 0 || unassignedPatients.length === 0}>Assign Bed</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
