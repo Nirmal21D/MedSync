@@ -24,10 +24,11 @@ import { collection, getDocs, setDoc, doc, deleteDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Staff } from "@/lib/types"
 
-export default function StaffPage({ params }: { params: { role: string } }) {
+export default function StaffPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = params
+  // Unwrap params using React.use()
+  const { role } = React.use(params)
   const [staff, setStaff] = useState<Staff[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")

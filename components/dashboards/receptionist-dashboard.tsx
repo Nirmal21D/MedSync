@@ -12,6 +12,22 @@ import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Patient, Appointment, Staff } from "@/lib/types"
 
+// Utility to safely format a date value
+function formatDate(dateValue: any) {
+  if (!dateValue) return ""
+  let dateObj: Date | null = null
+  if (dateValue instanceof Date) {
+    dateObj = dateValue
+  } else if (typeof dateValue === "string" || typeof dateValue === "number") {
+    const parsed = new Date(dateValue)
+    if (!isNaN(parsed.getTime())) dateObj = parsed
+  } else if (typeof dateValue === "object" && dateValue.seconds) {
+    // Firestore Timestamp
+    dateObj = new Date(dateValue.seconds * 1000)
+  }
+  return dateObj ? dateObj.toLocaleDateString() : ""
+}
+
 export default function ReceptionistDashboard() {
   const [showAddPatient, setShowAddPatient] = useState(false)
   const [newPatient, setNewPatient] = useState({
@@ -41,7 +57,17 @@ export default function ReceptionistDashboard() {
   }, [])
 
   const todayAppointments = appointments.filter(
-    (a) => new Date(a.date).toDateString() === new Date().toDateString(),
+    (a) => {
+      // Defensive: ensure a.date is a valid date
+      const apptDate = a.date instanceof Date
+        ? a.date
+        : typeof a.date === "string" || typeof a.date === "number"
+          ? new Date(a.date)
+          : a.date && a.date.seconds
+            ? new Date(a.date.seconds * 1000)
+            : null
+      return apptDate && apptDate.toDateString() === new Date().toDateString()
+    }
   )
   const occupiedBeds = patients.filter((p) => p.assignedBed).length
   const doctors = staff.filter((s) => s.role === "doctor")
@@ -276,6 +302,8 @@ export default function ReceptionistDashboard() {
                     <p className="font-medium">{appointment.patientName}</p>
                     <p className="text-sm text-gray-600">Dr. {appointment.doctorName}</p>
                     <p className="text-sm text-gray-500">{appointment.type}</p>
+                    {/* Example: Show appointment date safely */}
+                    {/* <p className="text-xs text-gray-400">Date: {formatDate(appointment.date)}</p> */}
                   </div>
                   <div className="text-right">
                     <p className="font-medium">{appointment.time}</p>
@@ -371,6 +399,8 @@ export default function ReceptionistDashboard() {
                     <Phone className="h-3 w-3 mr-1" />
                     {patient.phone}
                   </p>
+                  {/* Example: Show registration date safely if available */}
+                  {/* <p className="text-xs text-gray-400">Registered: {formatDate(patient.registeredAt)}</p> */}
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-600">{patient.assignedDoctor}</p>
