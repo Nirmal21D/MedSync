@@ -9,6 +9,22 @@ import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Prescription, InventoryItem } from "@/lib/types"
 
+// Utility to safely format a date value
+function formatDate(dateValue: any) {
+  if (!dateValue) return ""
+  let dateObj: Date | null = null
+  if (dateValue instanceof Date) {
+    dateObj = dateValue
+  } else if (typeof dateValue === "string" || typeof dateValue === "number") {
+    const parsed = new Date(dateValue)
+    if (!isNaN(parsed.getTime())) dateObj = parsed
+  } else if (typeof dateValue === "object" && dateValue.seconds) {
+    // Firestore Timestamp
+    dateObj = new Date(dateValue.seconds * 1000)
+  }
+  return dateObj ? dateObj.toLocaleDateString() : ""
+}
+
 export default function PharmacistDashboard() {
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
@@ -153,7 +169,7 @@ export default function PharmacistDashboard() {
                     <div>
                       <h3 className="font-medium">{prescription.patientName}</h3>
                       <p className="text-sm text-gray-600">Prescribed by: {prescription.doctorName}</p>
-                      <p className="text-sm text-gray-500">Date: {prescription.createdAt.toLocaleDateString()}</p>
+                      <p className="text-sm text-gray-500">Date: {formatDate(prescription.createdAt)}</p>
                     </div>
                     <Badge variant="secondary">Pending</Badge>
                   </div>
@@ -231,7 +247,7 @@ export default function PharmacistDashboard() {
                 <div>
                   <p className="font-medium">{medicine.name}</p>
                   <p className="text-sm text-gray-600">Location: {medicine.location}</p>
-                  <p className="text-sm text-gray-500">Last updated: {medicine.lastUpdated.toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-500">Last updated: {formatDate(medicine.lastUpdated)}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-medium">
@@ -274,7 +290,7 @@ export default function PharmacistDashboard() {
                 </div>
                 <div className="text-right">
                   <Badge variant="default">Approved</Badge>
-                  <p className="text-sm text-gray-500 mt-1">{prescription.processedAt?.toLocaleTimeString()}</p>
+                  <p className="text-sm text-gray-500 mt-1">{prescription.processedAt ? formatDate(prescription.processedAt) : ""}</p>
                 </div>
               </div>
             ))}
