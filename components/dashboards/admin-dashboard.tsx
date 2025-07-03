@@ -39,7 +39,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <UserManagement />
+      
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
         <p className="text-gray-600">Hospital management overview</p>
@@ -92,6 +92,7 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
+      <UserManagement />
       {/* Recent Alerts */}
       <Card>
         <CardHeader>

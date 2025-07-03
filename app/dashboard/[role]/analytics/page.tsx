@@ -33,17 +33,85 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
   const [totalPatients, setTotalPatients] = useState(0)
   const [totalStaff, setTotalStaff] = useState(0)
   const [totalInventory, setTotalInventory] = useState(0)
+  const [patients, setPatients] = useState<any[]>([])
+  const [staff, setStaff] = useState<any[]>([])
+  const [patientFlowData, setPatientFlowData] = useState<any[]>([])
+  const [departmentUtilizationData, setDepartmentUtilizationData] = useState<any[]>([])
+  const [inventory, setInventory] = useState<any[]>([])
+  const [inventoryTrendsData, setInventoryTrendsData] = useState<any[]>([])
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/")
     }
     if (db && user && role === "admin") {
-      getDocs(collection(db, "patients")).then(snapshot => setTotalPatients(snapshot.size))
-      getDocs(collection(db, "users")).then(snapshot => setTotalStaff(snapshot.size))
-      getDocs(collection(db, "inventory")).then(snapshot => setTotalInventory(snapshot.size))
+      getDocs(collection(db, "patients")).then(snapshot => {
+        setPatients(snapshot.docs.map(doc => doc.data()))
+        setTotalPatients(snapshot.size)
+      })
+      getDocs(collection(db, "users")).then(snapshot => {
+        setStaff(snapshot.docs.map(doc => doc.data()))
+        setTotalStaff(snapshot.size)
+      })
+      getDocs(collection(db, "inventory")).then(snapshot => {
+        setInventory(snapshot.docs.map(doc => doc.data()))
+        setTotalInventory(snapshot.size)
+      })
     }
   }, [user, loading, router, role])
+
+  useEffect(() => {
+    if (patients.length > 0) {
+      const flow: Record<string, number> = {};
+      patients.forEach((p) => {
+        let date: Date | null = null;
+        if (p.admissionDate) {
+          date = new Date(p.admissionDate);
+          if (isNaN(date.getTime())) date = null;
+        }
+        if (!date) return;
+        const month = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`;
+        flow[month] = (flow[month] || 0) + 1;
+      });
+      setPatientFlowData(Object.entries(flow).map(([month, count]) => ({ month, count })));
+    } else {
+      setPatientFlowData([]);
+    }
+  }, [patients])
+
+  useEffect(() => {
+    if (patients.length > 0 && staff.length > 0) {
+      // Department Utilization: patients per department
+      const deptMap: Record<string, { patients: number; staff: number }> = {}
+      patients.forEach(p => {
+        if (!deptMap[p.department]) deptMap[p.department] = { patients: 0, staff: 0 }
+        deptMap[p.department].patients += 1
+      })
+      staff.forEach(s => {
+        if (!deptMap[s.department]) deptMap[s.department] = { patients: 0, staff: 0 }
+        deptMap[s.department].staff += 1
+      })
+      setDepartmentUtilizationData(
+        Object.entries(deptMap).map(([department, { patients, staff }]) => ({
+          department,
+          patients,
+          staff,
+        }))
+      )
+    }
+  }, [patients, staff])
+
+  useEffect(() => {
+    if (inventory.length > 0) {
+      // Example: group inventory by category
+      const trends: Record<string, number> = {};
+      inventory.forEach((item) => {
+        if (!item.category) return;
+        trends[item.category] = (trends[item.category] || 0) + 1;
+      });
+      setInventoryTrendsData(Object.entries(trends).map(([category, count]) => ({ category, count })));
+    }
+  }, [inventory])
 
   // Only admin can access analytics
   useEffect(() => {
@@ -67,6 +135,12 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
   const totalRevenue = 0
   const totalExpenses = 0
   const totalProfit = totalRevenue - totalExpenses
+
+  const financialData = [
+    { month: "2024-01", revenue: 10000, expenses: 8000 },
+    { month: "2024-02", revenue: 12000, expenses: 9000 },
+    // ...
+  ];
 
   return (
     <DashboardLayout role={role}>
@@ -156,7 +230,19 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
               <CardTitle>Patient Flow Trends</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center text-gray-500 py-12">No analytics data available.</div>
+              {patientFlowData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={patientFlowData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="count" stroke="#ff6b6b" strokeWidth={3} dot={{ r: 4, fill: "#1e293b" }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center text-gray-500 py-12">No analytics data available.</div>
+              )}
             </CardContent>
           </Card>
 
@@ -165,7 +251,20 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
               <CardTitle>Department Utilization</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center text-gray-500 py-12">No analytics data available.</div>
+              {departmentUtilizationData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={departmentUtilizationData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="department" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="patients" fill="#8884d8" name="Patients" />
+                    <Bar dataKey="staff" fill="#82ca9d" name="Staff" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center text-gray-500 py-12">No analytics data available.</div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -177,7 +276,16 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
               <CardTitle>Financial Performance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center text-gray-500 py-12">No analytics data available.</div>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={financialData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="revenue" stroke="#82ca9d" fill="#82ca9d" name="Revenue" />
+                  <Area type="monotone" dataKey="expenses" stroke="#8884d8" fill="#8884d8" name="Expenses" />
+                </AreaChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
 
@@ -186,7 +294,19 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
               <CardTitle>Inventory Trends</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center text-gray-500 py-12">No analytics data available.</div>
+              {inventoryTrendsData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={inventoryTrendsData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="category" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#8884d8" name="Items" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center text-gray-500 py-12">No analytics data available.</div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -209,7 +329,25 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Placeholder for department data */}
+                  {Object.entries(
+                    staff.reduce((acc, s) => {
+                      if (!acc[s.department]) acc[s.department] = { staff: 0, patients: 0 }
+                      acc[s.department].staff += 1
+                      return acc
+                    }, patients.reduce((acc, p) => {
+                      if (!acc[p.department]) acc[p.department] = { staff: 0, patients: 0 }
+                      acc[p.department].patients += 1
+                      return acc
+                    }, {} as Record<string, { staff: number; patients: number }>))
+                  ).map(([dept, { staff, patients }]) => (
+                    <tr key={dept} className="border-b">
+                      <td className="p-2">{dept}</td>
+                      <td className="p-2">{patients}</td>
+                      <td className="p-2">{staff}</td>
+                      <td className="p-2">-</td>
+                      <td className="p-2">-</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

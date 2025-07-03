@@ -23,6 +23,8 @@ import { Users, Plus, Search, Mail, Phone, Calendar, Edit, Trash2, UserCheck, Us
 import { collection, getDocs, setDoc, doc, deleteDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Staff } from "@/lib/types"
+import { createUserWithEmailAndPassword } from "firebase/auth"
+import { auth } from "@/lib/firebase"
 
 export default function StaffPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
@@ -75,6 +77,12 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
     }
   }, [user, loading, role, router])
 
+  useEffect(() => {
+    if (!loading && user && user.status === "inactive") {
+      router.push("/inactive") // or show a message, or redirect to login
+    }
+  }, [user, loading, router])
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -113,26 +121,40 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
 
   const filteredStaff = getFilteredStaff()
 
-  const handleAddStaff = async (newStaff: Partial<Staff>) => {
-    if (!db) return
-    const staffMember: Staff = {
-      id: String(Date.now()),
-      name: newStaff.name || "",
-      email: newStaff.email || "",
-      role: (newStaff.role as "admin" | "doctor" | "nurse" | "pharmacist" | "receptionist") || "doctor",
-      specialization: newStaff.specialization,
-      department: newStaff.department || "",
-      phone: newStaff.phone || "",
-      status: "active",
-      joinDate: new Date(),
+  const handleAddStaff = async (newStaff: Partial<Staff> & { password?: string }) => {
+    if (!db || !auth) return
+    try {
+      // 1. Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        newStaff.email || "",
+        newStaff.password || ""
+      )
+      const uid = userCredential.user.uid
+
+      // 2. Store user data in Firestore
+      const staffMember: Staff = {
+        id: uid,
+        name: newStaff.name || "",
+        email: newStaff.email || "",
+        role: (newStaff.role as "admin" | "doctor" | "nurse" | "pharmacist" | "receptionist") || "doctor",
+        specialization: newStaff.specialization,
+        department: newStaff.department || "",
+        phone: newStaff.phone || "",
+        status: "active",
+        joinDate: new Date(),
+      }
+      await setDoc(doc(db, "users", uid), {
+        ...staffMember,
+        joinDate: staffMember.joinDate.toISOString(),
+        // Do NOT store password in Firestore for security!
+      })
+      setStaff([...staff, staffMember])
+      setShowAddStaff(false)
+    } catch (error: any) {
+      // Handle error (e.g., email already in use)
+      alert(error.message)
     }
-    await setDoc(doc(db, "users", staffMember.id), {
-      ...staffMember,
-      // Firestore does not support Date, so store as ISO string
-      joinDate: staffMember.joinDate.toISOString(),
-    })
-    setStaff([...staff, staffMember])
-    setShowAddStaff(false)
   }
 
   const handleUpdateStaff = async (updatedStaff: Staff) => {
@@ -158,7 +180,7 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
     const staffMember = staff.find((s) => s.id === staffId)
     if (!staffMember) return
     const updatedStatus = staffMember.status === "active" ? "inactive" : "active"
-    const updatedStaffMember = { ...staffMember, status: updatedStatus }
+    const updatedStaffMember = { ...staffMember, status: updatedStatus as "active" | "inactive" }
     await setDoc(doc(db, "users", staffId), {
       ...updatedStaffMember,
       joinDate: updatedStaffMember.joinDate instanceof Date
@@ -413,21 +435,25 @@ function AddStaffForm({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (staff: Partial<Staff>) => void
+  onSubmit: (staff: Partial<Staff> & { password?: string }) => void
   onCancel: () => void
 }) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    role: "",
+    role: "doctor" as "admin" | "doctor" | "nurse" | "pharmacist" | "receptionist",
     specialization: "",
     department: "",
     phone: "",
+    password: "",
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    onSubmit({
+      ...formData,
+      role: (formData.role ? formData.role : "doctor") as "admin" | "doctor" | "nurse" | "pharmacist" | "receptionist",
+    })
   }
 
   return (
@@ -454,7 +480,7 @@ function AddStaffForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="role">Role *</Label>
-          <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+          <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value as "admin" | "doctor" | "nurse" | "pharmacist" | "receptionist" })}>
             <SelectTrigger>
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
@@ -492,6 +518,16 @@ function AddStaffForm({
             value={formData.specialization}
             onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
             placeholder="For doctors only"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password *</Label>
+          <Input
+            id="password"
+            type="password"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            required
           />
         </div>
       </div>
@@ -561,7 +597,7 @@ function EditStaffForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="role">Role *</Label>
-          <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+          <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value as "admin" | "doctor" | "nurse" | "pharmacist" | "receptionist" })}>
             <SelectTrigger>
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
@@ -611,3 +647,4 @@ function EditStaffForm({
     </form>
   )
 }
+

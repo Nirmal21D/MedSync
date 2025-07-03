@@ -11,6 +11,7 @@ import {
   type User as FirebaseUser,
 } from "firebase/auth"
 import { doc, getDoc, setDoc } from "firebase/firestore"
+import { useRouter } from "next/navigation"
 
 const DEMO_USERS = [
   { email: "admin@medsync.com", role: "admin" },
@@ -23,6 +24,7 @@ const DEMO_USERS = [
 interface User extends FirebaseUser {
   role?: string
   name?: string
+  status?: "active" | "inactive"
 }
 
 interface AuthContextType {
@@ -37,6 +39,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     if (!auth) {
@@ -46,9 +49,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const snap = await getDoc(doc(db, "users", firebaseUser.uid))
-        const data = snap.data()
-        setUser({ ...firebaseUser, role: data?.role, name: data?.name })
+        if (db) {
+          const snap = await getDoc(doc(db, "users", firebaseUser.uid))
+          const data = snap.data()
+          setUser({ ...firebaseUser, role: data?.role, name: data?.name, status: data?.status })
+        } else {
+          setUser({ ...firebaseUser })
+        }
       } else {
         setUser(null)
       }
@@ -75,6 +82,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password)
 
+      // Fetch user data from Firestore
+      const snap = await getDoc(doc(db, "users", result.user.uid))
+      const data = snap.data()
+      if (data?.status === "inactive") {
+        await firebaseSignOut(auth)
+        router.push("/inactive")
+        return
+      }
+
       // Persist / update role on Firestore
       await setDoc(
         doc(db, "users", result.user.uid),
@@ -87,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         { merge: true },
       )
     } catch (error: any) {
-      // If we’re using demo credentials in a real Firebase project that
+      // If we're using demo credentials in a real Firebase project that
       // does not contain those users – silently fall back.
       if (error.code === "auth/invalid-credential") {
         const match = DEMO_USERS.find((u) => u.email === email && u.role === role)
