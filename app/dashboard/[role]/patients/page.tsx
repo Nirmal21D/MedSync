@@ -859,23 +859,7 @@ function PatientDetailsModal({ patient, role, onUpdateHistory }: { patient: Pati
         </Card>
       )}
 
-      {patient.history?.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Doctor Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {patient.history.map((item, index) => (
-                <li key={index} className="flex items-start">
-                  <span className="text-gray-400 mr-2">•</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+     
 
       {/* --- Bills & Payments section for Receptionist --- */}
       {role === "receptionist" && (
