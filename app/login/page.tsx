@@ -72,8 +72,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen theme-bg flex items-center justify-center p-4 overflow-hidden">
-      {/* Animated color blobs */}
+    <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden">
+      {/* Animated gradient background (match landing page) */}
+      <div className="absolute inset-0 -z-20 animate-bgMove bg-[length:300%_300%] bg-gradient-to-br from-[#f0fdfa] via-[#f5d0fe] to-[#ede9fe] dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 transition-colors duration-500" />
+      {/* Restore original four animated blobs */}
       <div className="absolute -z-10 left-1/2 top-1/4 w-[32vw] h-[32vw] bg-emerald-200 dark:bg-emerald-900 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-60%,-40%)'}} />
       <div className="absolute -z-10 right-1/4 bottom-0 w-[28vw] h-[28vw] bg-violet-200 dark:bg-violet-900 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(40%,40%)'}} />
       <div className="absolute -z-10 left-1/4 bottom-0 w-[20vw] h-[20vw] bg-blue-200 dark:bg-blue-900 opacity-30 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-30%,60%)'}} />

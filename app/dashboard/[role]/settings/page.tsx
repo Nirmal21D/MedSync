@@ -24,10 +24,10 @@ import { createUserWithEmailAndPassword } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { collection, getDocs } from "firebase/firestore"
 
-export default function SettingsPage({ params }: { params: Promise<{ role: string }> }) {
+export default function SettingsPage({ params }: { params: { role: string } }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = React.use(params)
+  const { role } = params
   const { toast } = useToast()
   const [settings, setSettings] = useState<SystemSettings | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -498,7 +498,7 @@ export default function SettingsPage({ params }: { params: Promise<{ role: strin
           </TabsContent>
 
           <TabsContent value="security">
-            <Card>
+            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Shield className="mr-2 h-5 w-5" />
@@ -516,90 +516,25 @@ export default function SettingsPage({ params }: { params: Promise<{ role: strin
                       onChange={(e) =>
                         setSettings({
                           ...settings,
-                          notifications: { ...settings.notifications, smsEnabled: checked },
+                          security: { ...settings.security, sessionTimeout: Number.parseInt(e.target.value) || 30 },
                         })
                       }
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Push Notifications</Label>
-                      <p className="text-sm text-gray-600">Receive browser push notifications</p>
-                    </div>
-                    <Switch
-                      checked={settings.notifications.pushEnabled}
-                      onCheckedChange={(checked) =>
-                        setSettings({
-                          ...settings,
-                          notifications: { ...settings.notifications, pushEnabled: checked },
-                        })
-                      }
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="security">
-              <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Shield className="mr-2 h-5 w-5" />
-                    Security Settings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
-                      <Input
-                        id="sessionTimeout"
-                        type="number"
-                        value={settings.security.sessionTimeout}
-                        onChange={(e) =>
-                          setSettings({
-                            ...settings,
-                            security: { ...settings.security, sessionTimeout: Number.parseInt(e.target.value) || 30 },
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="minPasswordLength">Minimum Password Length</Label>
-                      <Input
-                        id="minPasswordLength"
-                        type="number"
-                        value={settings.security.passwordPolicy.minLength}
-                        onChange={(e) =>
-                          setSettings({
-                            ...settings,
-                            security: {
-                              ...settings.security,
-                              passwordPolicy: {
-                                ...settings.security.passwordPolicy,
-                                minLength: Number.parseInt(e.target.value) || 8,
-                              },
-                            },
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Require Special Characters</Label>
-                      <p className="text-sm text-gray-600">Passwords must contain special characters</p>
-                    </div>
-                    <Switch
-                      checked={settings.security.passwordPolicy.requireSpecialChars}
-                      onCheckedChange={(checked) =>
+                  <div className="space-y-2">
+                    <Label htmlFor="minPasswordLength">Minimum Password Length</Label>
+                    <Input
+                      id="minPasswordLength"
+                      type="number"
+                      value={settings.security.passwordPolicy.minLength}
+                      onChange={(e) =>
                         setSettings({
                           ...settings,
                           security: {
                             ...settings.security,
                             passwordPolicy: {
                               ...settings.security.passwordPolicy,
-                              requireSpecialChars: checked,
+                              minLength: Number.parseInt(e.target.value) || 8,
                             },
                           },
                         })
@@ -708,13 +643,7 @@ export default function SettingsPage({ params }: { params: Promise<{ role: strin
                       onValueChange={(value: "daily" | "weekly" | "monthly") =>
                         setSettings({
                           ...settings,
-                          security: {
-                            ...settings.security,
-                            passwordPolicy: {
-                              ...settings.security.passwordPolicy,
-                              requireNumbers: checked,
-                            },
-                          },
+                          backup: { ...settings.backup, backupFrequency: value },
                         })
                       }
                     />
@@ -772,60 +701,10 @@ export default function SettingsPage({ params }: { params: Promise<{ role: strin
                     </Button>
                   </div>
                 </div>
-
-            <TabsContent value="data">
-              <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Database className="mr-2 h-5 w-5" />
-                    Data Management
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Export Data</h3>
-                      <p className="text-sm text-gray-600">Export hospital data for backup or migration purposes</p>
-                      <Button onClick={handleExportData} variant="outline" className="w-full bg-transparent">
-                        <Download className="mr-2 h-4 w-4" />
-                        Export All Data
-                      </Button>
-                    </div>
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Import Data</h3>
-                      <p className="text-sm text-gray-600">Import data from previous system or backup files</p>
-                      <Button variant="outline" className="w-full bg-transparent">
-                        <Upload className="mr-2 h-4 w-4" />
-                        Import Data
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-6">
-                    <h3 className="text-lg font-medium mb-4">Data Statistics</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center p-4 bg-blue-50 rounded-lg">
-                        <p className="text-2xl font-bold text-blue-600">1,247</p>
-                        <p className="text-sm text-gray-600">Total Records</p>
-                      </div>
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <p className="text-2xl font-bold text-green-600">98.5%</p>
-                        <p className="text-sm text-gray-600">Data Integrity</p>
-                      </div>
-                      <div className="text-center p-4 bg-orange-50 rounded-lg">
-                        <p className="text-2xl font-bold text-orange-600">2.3 GB</p>
-                        <p className="text-sm text-gray-600">Storage Used</p>
-                      </div>
-                      <div className="text-center p-4 bg-purple-50 rounded-lg">
-                        <p className="text-2xl font-bold text-purple-600">24h</p>
-                        <p className="text-sm text-gray-600">Last Backup</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
         </div>
       </div>
     </DashboardLayout>

@@ -148,29 +148,25 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
   return (
     <DashboardLayout role={role}>
-      <div className="relative space-y-6 theme-bg min-h-screen p-4 overflow-hidden">
-        {/* Animated color blobs */}
-        <div className="absolute -z-10 left-1/2 top-1/4 w-[32vw] h-[32vw] bg-emerald-200 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-60%,-40%)'}} />
-        <div className="absolute -z-10 right-1/4 bottom-0 w-[28vw] h-[28vw] bg-violet-200 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(40%,40%)'}} />
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-              <p className="text-gray-600">Hospital performance metrics and insights</p>
-            </div>
-            <Select defaultValue="last-6-months">
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="last-week">Last Week</SelectItem>
-                <SelectItem value="last-month">Last Month</SelectItem>
-                <SelectItem value="last-3-months">Last 3 Months</SelectItem>
-                <SelectItem value="last-6-months">Last 6 Months</SelectItem>
-                <SelectItem value="last-year">Last Year</SelectItem>
-              </SelectContent>
-            </Select>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+            <p className="text-gray-600">Hospital performance metrics and insights</p>
           </div>
+          <Select defaultValue="last-6-months">
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="last-week">Last Week</SelectItem>
+              <SelectItem value="last-month">Last Month</SelectItem>
+              <SelectItem value="last-3-months">Last 3 Months</SelectItem>
+              <SelectItem value="last-6-months">Last 6 Months</SelectItem>
+              <SelectItem value="last-year">Last Year</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -216,76 +212,31 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
             </CardContent>
           </Card>
 
-            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Inventory Items</CardTitle>
-                <div className="rounded-xl bg-orange-100 p-2"><Package className="h-5 w-5 text-orange-500" /></div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalInventory}</div>
-                <p className="text-xs text-muted-foreground">
-                  <TrendingDown className="inline h-3 w-3 mr-1" />
-                  +0% from last period
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Inventory Items</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalInventory}</div>
+              <p className="text-xs text-muted-foreground">
+                <TrendingDown className="inline h-3 w-3 mr-1" />
+                +0% from last period
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* Charts Row 1 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-              <CardHeader>
-                <CardTitle>Patient Flow Trends</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {patientFlowData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={patientFlowData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis allowDecimals={false} />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="count" stroke="#ff6b6b" strokeWidth={3} dot={{ r: 4, fill: "#1e293b" }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center text-gray-500 py-12">No analytics data available.</div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-              <CardHeader>
-                <CardTitle>Department Utilization</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {departmentUtilizationData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={departmentUtilizationData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="department" />
-                      <YAxis allowDecimals={false} />
-                      <Tooltip />
-                      <Bar dataKey="patients" fill="#8884d8" name="Patients" />
-                      <Bar dataKey="staff" fill="#82ca9d" name="Staff" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center text-gray-500 py-12">No analytics data available.</div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Charts Row 2 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-              <CardHeader>
-                <CardTitle>Financial Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
+        {/* Charts Row 1 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Patient Flow Trends</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {patientFlowData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={financialData}>
+                  <LineChart data={patientFlowData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis allowDecimals={false} />
@@ -296,35 +247,15 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                     <Line type="monotone" dataKey="count" stroke="#ff6b6b" strokeWidth={3} dot={{ r: 4, fill: "#1e293b" }} />
                   </LineChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
+              ) : (
+                <div className="text-center text-gray-500 py-12">No analytics data available.</div>
+              )}
+            </CardContent>
+          </Card>
 
-            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-              <CardHeader>
-                <CardTitle>Inventory Trends</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {inventoryTrendsData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={inventoryTrendsData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="category" />
-                      <YAxis allowDecimals={false} />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="#8884d8" name="Items" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center text-gray-500 py-12">No analytics data available.</div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Department Performance Table */}
-          <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
+          <Card>
             <CardHeader>
-              <CardTitle>Department Performance Overview</CardTitle>
+              <CardTitle>Department Utilization</CardTitle>
             </CardHeader>
             <CardContent>
               {departmentUtilizationData.length > 0 ? (
@@ -471,118 +402,95 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                         )}
                       </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {(
-                      Object.entries(
-                        staff.reduce((acc, s) => {
-                          if (!acc[s.department]) acc[s.department] = { staff: 0, patients: 0 }
-                          acc[s.department].staff += 1
-                          return acc
-                        }, patients.reduce((acc, p) => {
-                          if (!acc[p.department]) acc[p.department] = { staff: 0, patients: 0 }
-                          acc[p.department].patients += 1
-                          return acc
-                        }, {} as Record<string, { staff: number; patients: number }>))
-                      ) as [string, { staff: number; patients: number }][]
-                    ).map(([dept, { staff, patients }]) => (
-                      <tr key={dept} className="border-b">
-                        <td className="p-2">{dept}</td>
-                        <td className="p-2">{patients}</td>
-                        <td className="p-2">{staff}</td>
-                        <td className="p-2">-</td>
-                        <td className="p-2">-</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Calendar className="mr-2 h-5 w-5" />
+                This Month Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between">
+                <span>Total Admissions:</span>
+                <span className="font-bold">0</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total Discharges:</span>
+                <span className="font-bold">0</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Average Stay:</span>
+                <span className="font-bold">0 days</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Bed Occupancy:</span>
+                <span className="font-bold">0%</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Calendar className="mr-2 h-5 w-5" />
-                  This Month Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Total Admissions:</span>
-                  <span className="font-bold">0</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Total Discharges:</span>
-                  <span className="font-bold">0</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Average Stay:</span>
-                  <span className="font-bold">0 days</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Bed Occupancy:</span>
-                  <span className="font-bold">0%</span>
-                </div>
-              </CardContent>
-            </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <DollarSign className="mr-2 h-5 w-5" />
+                Financial Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between">
+                <span>Total Revenue:</span>
+                <span className="font-bold text-green-600">$0</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total Expenses:</span>
+                <span className="font-bold text-red-600">$0</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Net Profit:</span>
+                <span className="font-bold text-blue-600">$0</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Profit Margin:</span>
+                <span className="font-bold">0%</span>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <DollarSign className="mr-2 h-5 w-5" />
-                  Financial Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Total Revenue:</span>
-                  <span className="font-bold text-green-600">$0</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Total Expenses:</span>
-                  <span className="font-bold text-red-600">$0</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Net Profit:</span>
-                  <span className="font-bold text-blue-600">$0</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Profit Margin:</span>
-                  <span className="font-bold">0%</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <FileText className="mr-2 h-5 w-5" />
-                  Quality Metrics
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Patient Satisfaction:</span>
-                  <span className="font-bold">0/5.0</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Readmission Rate:</span>
-                  <span className="font-bold">0%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Average Response Time:</span>
-                  <span className="font-bold">0 min</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Staff Efficiency:</span>
-                  <span className="font-bold">0%</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <FileText className="mr-2 h-5 w-5" />
+                Quality Metrics
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between">
+                <span>Patient Satisfaction:</span>
+                <span className="font-bold">0/5.0</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Readmission Rate:</span>
+                <span className="font-bold">0%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Average Response Time:</span>
+                <span className="font-bold">0 min</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Staff Efficiency:</span>
+                <span className="font-bold">0%</span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </DashboardLayout>
