@@ -47,11 +47,11 @@ export default function LoginPage() {
 
   // Demo credentials for testing
   const demoCredentials = [
-    { role: "admin", email: "admin@medsync.com", password: "admin123" },
-    { role: "doctor", email: "doctor@medsync.com", password: "doctor123" },
-    { role: "nurse", email: "nurse@medsync.com", password: "nurse123" },
-    { role: "pharmacist", email: "pharmacist@medsync.com", password: "pharmacist123" },
-    { role: "receptionist", email: "receptionist@medsync.com", password: "receptionist123" },
+    { role: "admin", email: "admin@gmail.com", password: "1234567890" },
+    { role: "doctor", email: "doctor1@gmail.com", password: "1234567890" },
+    { role: "nurse", email: "nurse1@gmail.com", password: "1234567890" },
+    { role: "pharmacist", email: "pharmacist1@gmail.com", password: "1234567890" },
+    { role: "receptionist", email: "receptionist1@gmail.com", password: "1234567890" },
   ]
 
   const fillDemoCredentials = (demoRole: string) => {

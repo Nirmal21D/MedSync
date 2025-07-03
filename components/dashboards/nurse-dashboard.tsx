@@ -6,37 +6,128 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Users, FileText, Clock, AlertCircle, Plus, Bell } from "lucide-react"
-import { collection, getDocs } from "firebase/firestore"
+import { collection, getDocs, setDoc, doc, updateDoc, arrayUnion } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import type { Patient } from "@/lib/types"
+import { useAuth } from "@/components/providers/auth-provider"
+import type { Patient, NursingNote, MedicineReminder } from "@/lib/types"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
+import { Firestore } from "firebase/firestore"
 
 export default function NurseDashboard() {
+  const { user } = useAuth()
   const [newNote, setNewNote] = useState("")
-  const [assignedPatients, setAssignedPatients] = useState<Patient[]>([])
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
+  const [patients, setPatients] = useState<Patient[]>([])
   const [criticalPatients, setCriticalPatients] = useState<Patient[]>([])
+  const [showNoteDialog, setShowNoteDialog] = useState(false)
+  const [activeReminders, setActiveReminders] = useState<MedicineReminder[]>([])
 
   useEffect(() => {
-    if (!db) return
-    getDocs(collection(db, "patients")).then(snapshot => {
-      const patients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient))
-      setAssignedPatients(patients) // TODO: filter by assigned nurse when available
-      setCriticalPatients(patients.filter((p) => p.status === "critical"))
-    })
-  }, [])
+    if (!db || !user) return
 
-  const medicineReminders = [
+    // Fetch patients
+    const fetchPatients = async () => {
+      try {
+        const snapshot = await getDocs(collection(db as Firestore, "patients"))
+        const allPatients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient))
+        setPatients(allPatients)
+        setCriticalPatients(allPatients.filter((p) => p.status === "critical"))
+      } catch (error) {
+        console.error("Error fetching patients:", error)
+      }
+    }
+
+    // Fetch medicine reminders for the current nurse/shift
+    const fetchMedicineReminders = async () => {
+      try {
+        const remindersRef = collection(db as Firestore, "medicineReminders")
+        const snapshot = await getDocs(remindersRef)
+        const reminders = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as MedicineReminder))
+          .filter(reminder => 
+            reminder.status === "active" && 
+            new Date(reminder.startDate) <= new Date() && 
+            (!reminder.endDate || new Date(reminder.endDate) >= new Date())
+          )
+        setActiveReminders(reminders)
+      } catch (error) {
+        console.error("Error fetching reminders:", error)
+      }
+    }
+
+    fetchPatients()
+    fetchMedicineReminders()
+  }, [user])
+
+  // Update reminder status
+  const handleReminderStatusUpdate = async (reminderId: string, newStatus: 'active' | 'completed' | 'paused') => {
+    if (!db) return
+
+    try {
+      const reminderRef = doc(db as Firestore, "medicineReminders", reminderId)
+      await updateDoc(reminderRef, { status: newStatus })
+
+      // Update local state
+      setActiveReminders(prevReminders => 
+        prevReminders.map(reminder => 
+          reminder.id === reminderId 
+            ? { ...reminder, status: newStatus } 
+            : reminder
+        )
+      )
+    } catch (error) {
+      console.error("Error updating reminder status:", error)
+    }
+  }
+
+  // Example: medicine reminders (replace with real data if available)
+  const medicineRemindersExample = [
     { patientName: "John Smith", medicine: "Lisinopril 10mg", time: "10:00 AM", status: "pending" },
     { patientName: "Emily Davis", medicine: "Azithromycin 250mg", time: "2:00 PM", status: "completed" },
     { patientName: "Robert Wilson", medicine: "Metoprolol 25mg", time: "6:00 PM", status: "pending" },
   ]
 
-  const handleAddNote = (patientId: string) => {
-    if (newNote.trim()) {
-      // In real app, save to database
-      console.log(`Adding note for patient ${patientId}: ${newNote}`)
-      setNewNote("")
+  // Add a nursing note for a patient
+  const handleAddNote = async () => {
+    if (!db || !selectedPatient || !user || !newNote.trim()) return
+
+    // 1. Add note to patient's notes array
+    await updateDoc(doc(db, "patients", selectedPatient.id), {
+      notes: arrayUnion({
+        content: newNote,
+        nurseName: user.name,
+        timestamp: new Date().toISOString(),
+      }),
+    })
+
+    // 2. Add note to nursingNotes collection
+    const note: NursingNote = {
+      id: String(Date.now()),
+      patientId: selectedPatient.id,
+      patientName: selectedPatient.name ?? "",
+      nurseId: user.uid ?? "",
+      nurseName: user.name ?? "",
+      shift: "morning", // You can make this dynamic
+      type: "general",
+      content: newNote,
+      timestamp: new Date(),
+      priority: "medium",
+      tags: [],
     }
+    await setDoc(doc(db, "nursingNotes", note.id), note)
+
+    setNewNote("")
+    setShowNoteDialog(false)
   }
+
+  // Example chart data (replace with real patient vitals history if available)
+  const getChartData = (patient: Patient) => [
+    { name: "BP", value: parseInt((patient.vitals?.bloodPressure || "120/80").split("/")[0]) || 120 },
+    { name: "HR", value: patient.vitals?.heartRate || 72 },
+    { name: "Temp", value: patient.vitals?.temperature || 98.6 },
+    { name: "O2", value: patient.vitals?.oxygenSaturation || 98 },
+  ]
 
   return (
     <div className="space-y-6">
@@ -49,15 +140,14 @@ export default function NurseDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Assigned Patients</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{assignedPatients.length}</div>
-            <p className="text-xs text-muted-foreground">Under your care</p>
+            <div className="text-2xl font-bold">{patients.length}</div>
+            <p className="text-xs text-muted-foreground">All patients</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Critical Patients</CardTitle>
@@ -68,31 +158,30 @@ export default function NurseDashboard() {
             <p className="text-xs text-muted-foreground">Need attention</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Medicine Reminders</CardTitle>
             <Bell className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{medicineReminders.filter((r) => r.status === "pending").length}</div>
-            <p className="text-xs text-muted-foreground">Pending today</p>
+            <div className="text-2xl font-bold">{activeReminders.length}</div>
+            <p className="text-xs text-muted-foreground">Active Reminders</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Notes Added</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            {/* You can fetch and count notes for this nurse if needed */}
+            <div className="text-2xl font-bold">-</div>
             <p className="text-xs text-muted-foreground">This shift</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Medicine Reminders */}
+      {/* Medicine Reminders - Enhanced Version */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -103,18 +192,59 @@ export default function NurseDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {medicineReminders.map((reminder, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium">{reminder.patientName}</p>
-                  <p className="text-sm text-gray-600">{reminder.medicine}</p>
+            {activeReminders.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center">
+                No active medicine reminders at the moment
+              </p>
+            ) : (
+              activeReminders.map((reminder) => (
+                <div 
+                  key={reminder.id} 
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium">{reminder.patientName}</p>
+                    <p className="text-sm text-gray-600">
+                      {reminder.medicineName} - {reminder.dosage}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {reminder.frequency} | {reminder.timeOfDay.join(", ")}
+                    </p>
+                  </div>
+                  <div className="text-right flex items-center space-x-2">
+                    <Badge 
+                      variant={
+                        reminder.status === "completed" 
+                          ? "default" 
+                          : reminder.status === "paused" 
+                            ? "secondary" 
+                            : "outline"
+                      }
+                    >
+                      {reminder.status}
+                    </Badge>
+                    {reminder.status === "active" && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleReminderStatusUpdate(reminder.id, "completed")}
+                      >
+                        Mark as Done
+                      </Button>
+                    )}
+                    {reminder.status === "active" && (
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={() => handleReminderStatusUpdate(reminder.id, "paused")}
+                      >
+                        Pause
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium">{reminder.time}</p>
-                  <Badge variant={reminder.status === "completed" ? "default" : "secondary"}>{reminder.status}</Badge>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
@@ -122,84 +252,71 @@ export default function NurseDashboard() {
       {/* Patient List */}
       <Card>
         <CardHeader>
-          <CardTitle>My Patients</CardTitle>
-          <CardDescription>Patients assigned to your care</CardDescription>
+          <CardTitle>All Patients</CardTitle>
+          <CardDescription>All patients under your care</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {assignedPatients.map((patient) => (
-              <div key={patient.id} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="font-medium">{patient.name}</h3>
-                    <p className="text-sm text-gray-600">{patient.diagnosis}</p>
-                    <p className="text-sm text-gray-500">
-                      Age: {patient.age} • Bed: {patient.assignedBed}
-                    </p>
-                  </div>
-                  <Badge
-                    variant={
-                      patient.status === "critical"
-                        ? "destructive"
-                        : patient.status === "admitted"
+            {patients.map((patient) => {
+              const notes = (patient as any).notes as any[] | undefined;
+              const safeNotes = notes ?? [];
+              return (
+                <div key={patient.id} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="font-medium">{patient.name}</h3>
+                      <p className="text-sm text-gray-600">{patient.diagnosis}</p>
+                      <p className="text-sm text-gray-500">
+                        Age: {patient.age} • Bed: {patient.assignedBed}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={
+                        patient.status === "critical"
+                          ? "destructive"
+                          : patient.status === "admitted"
                           ? "default"
                           : "secondary"
-                    }
-                  >
-                    {patient.status}
-                  </Badge>
-                </div>
+                      }
+                    >
+                      {patient.status}
+                    </Badge>
+                  </div>
 
-                {/* Vitals */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3 p-3 bg-gray-50 rounded">
-                  <div>
-                    <p className="text-xs text-gray-500">Blood Pressure</p>
-                    <p className="font-medium">{patient.vitals.bloodPressure}</p>
+                  {/* Nursing Chart */}
+                  <div className="mb-3">
+                    <ResponsiveContainer width="100%" height={120}>
+                      <LineChart data={getChartData(patient)}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Heart Rate</p>
-                    <p className="font-medium">{patient.vitals.heartRate} bpm</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Temperature</p>
-                    <p className="font-medium">{patient.vitals.temperature}°F</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">O2 Saturation</p>
-                    <p className="font-medium">{patient.vitals.oxygenSaturation}%</p>
-                  </div>
-                </div>
 
-                {/* Nursing Notes */}
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Nursing Notes</h4>
-                  {patient.nursingNotes && patient.nursingNotes.length > 0 ? (
-                    <div className="space-y-1">
-                      {patient.nursingNotes.map((note, index) => (
-                        <p key={index} className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                          {note}
-                        </p>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">No notes yet</p>
-                  )}
-
-                  <div className="flex space-x-2">
-                    <Textarea
-                      placeholder="Add nursing note..."
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      className="flex-1"
-                      rows={2}
-                    />
-                    <Button onClick={() => handleAddNote(patient.id)} disabled={!newNote.trim()}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                  {/* Nursing Notes */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">Latest Nursing Note</h4>
+                    {safeNotes.length > 0 ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-gray-600 bg-blue-50 p-2 rounded flex-1">
+                            {safeNotes[safeNotes.length - 1].content}
+                            <span className="text-xs text-gray-400"> - {safeNotes[safeNotes.length - 1].nurseName}</span>
+                            <span className="text-xs text-gray-400 ml-2">{new Date(safeNotes[safeNotes.length - 1].timestamp).toLocaleString()}</span>
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No notes yet</p>
+                    )}
+                    <p className="text-xs text-blue-600 mt-2">For full note management, visit the Nursing Notes section.</p>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </CardContent>
       </Card>
@@ -212,7 +329,16 @@ export default function NurseDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col bg-transparent">
+            <Button
+              variant="outline"
+              className="h-20 flex-col bg-transparent"
+              onClick={() => {
+                if (patients.length > 0) {
+                  setSelectedPatient(patients[0])
+                  setShowNoteDialog(true)
+                }
+              }}
+            >
               <FileText className="h-6 w-6 mb-2" />
               Add Note
             </Button>

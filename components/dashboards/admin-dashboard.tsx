@@ -91,8 +91,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-
-      <UserManagement />
       {/* Recent Alerts */}
       <Card>
         <CardHeader>
