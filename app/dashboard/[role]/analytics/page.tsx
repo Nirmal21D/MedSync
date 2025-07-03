@@ -115,10 +115,10 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
   // Only admin can access analytics
   useEffect(() => {
-    if (!loading && user && role !== "admin") {
+    if (!loading && user && user.role !== "admin") {
       router.push(`/dashboard/${user.role}`)
     }
-  }, [user, loading, role, router])
+  }, [user, loading, router])
 
   if (loading) {
     return (
@@ -132,8 +132,12 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
 
-  const totalRevenue = 0
-  const totalExpenses = 0
+  const totalRevenue = patients.reduce((sum: number, p: { bills?: Array<{ total?: number }> }) =>
+    sum + (Array.isArray(p.bills) ? p.bills.reduce((bSum: number, b: { total?: number }) => bSum + (b.total || 0), 0) : 0)
+  , 0);
+  const totalExpenses = staff.reduce((sum, s) =>
+    sum + (typeof s.salary === "number" ? s.salary : 0)
+  , 0);
   const totalProfit = totalRevenue - totalExpenses
 
   const financialData = [
@@ -168,49 +172,49 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
             </Select>
           </div>
 
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <div className="rounded-xl bg-green-100 p-2"><DollarSign className="h-5 w-5 text-green-500" /></div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">$0</div>
-                <p className="text-xs text-muted-foreground">
-                  <TrendingUp className="inline h-3 w-3 mr-1" />
-                  +0% from last period
-                </p>
-              </CardContent>
-            </Card>
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₹{totalRevenue.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                <TrendingUp className="inline h-3 w-3 mr-1" />
+                +0% from last period
+              </p>
+            </CardContent>
+          </Card>
 
-            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
-                <div className="rounded-xl bg-violet-100 p-2"><Users className="h-5 w-5 text-violet-500" /></div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalPatients}</div>
-                <p className="text-xs text-muted-foreground">
-                  <TrendingUp className="inline h-3 w-3 mr-1" />
-                  +0% from last period
-                </p>
-              </CardContent>
-            </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+              <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">₹{totalExpenses.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                <TrendingDown className="inline h-3 w-3 mr-1" />
+                +0% from last period
+              </p>
+            </CardContent>
+          </Card>
 
-            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Staff Members</CardTitle>
-                <div className="rounded-xl bg-blue-100 p-2"><Activity className="h-5 w-5 text-blue-500" /></div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalStaff}</div>
-                <p className="text-xs text-muted-foreground">
-                  <TrendingUp className="inline h-3 w-3 mr-1" />
-                  +0% from last period
-                </p>
-              </CardContent>
-            </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">₹{totalProfit.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                <TrendingUp className="inline h-3 w-3 mr-1" />
+                +0% from last period
+              </p>
+            </CardContent>
+          </Card>
 
             <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -284,11 +288,13 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                   <AreaChart data={financialData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="revenue" stroke="#82ca9d" fill="#82ca9d" name="Revenue" />
-                    <Area type="monotone" dataKey="expenses" stroke="#8884d8" fill="#8884d8" name="Expenses" />
-                  </AreaChart>
+                    <YAxis allowDecimals={false} />
+                    <Tooltip labelFormatter={(value) => {
+                      const date = new Date(value);
+                      return new Date(date.getFullYear() + "-" + (date.getMonth() + 1) + "-01").toLocaleString("default", { month: "short", year: "numeric" });
+                    }} />
+                    <Line type="monotone" dataKey="count" stroke="#ff6b6b" strokeWidth={3} dot={{ r: 4, fill: "#1e293b" }} />
+                  </LineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -321,15 +327,149 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
               <CardTitle>Department Performance Overview</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Department</th>
-                      <th className="text-left p-2">Patients</th>
-                      <th className="text-left p-2">Staff</th>
-                      <th className="text-left p-2">Utilization</th>
-                      <th className="text-left p-2">Status</th>
+              {departmentUtilizationData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={departmentUtilizationData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="department" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip labelFormatter={(value) => {
+                      const date = new Date(value);
+                      return new Date(date.getFullYear() + "-" + (date.getMonth() + 1) + "-01").toLocaleString("default", { month: "short", year: "numeric" });
+                    }} />
+                    <Bar dataKey="patients" fill="#8884d8" name="Patients" />
+                    <Bar dataKey="staff" fill="#82ca9d" name="Staff" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center text-gray-500 py-12">No analytics data available.</div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Row 2 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Financial Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={financialData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip labelFormatter={(value) => {
+                    const date = new Date(value);
+                    return new Date(date.getFullYear() + "-" + (date.getMonth() + 1) + "-01").toLocaleString("default", { month: "short", year: "numeric" });
+                  }} />
+                  <Area type="monotone" dataKey="revenue" stroke="#82ca9d" fill="#82ca9d" name="Revenue" />
+                  <Area type="monotone" dataKey="expenses" stroke="#8884d8" fill="#8884d8" name="Expenses" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Inventory Trends</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {inventoryTrendsData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={inventoryTrendsData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="category" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip labelFormatter={(value) => {
+                      const date = new Date(value);
+                      return new Date(date.getFullYear() + "-" + (date.getMonth() + 1) + "-01").toLocaleString("default", { month: "short", year: "numeric" });
+                    }} />
+                    <Bar dataKey="count" fill="#8884d8" name="Items" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center text-gray-500 py-12">No analytics data available.</div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Department Performance Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Department Performance Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Department</th>
+                    <th className="text-left p-2">Patients</th>
+                    <th className="text-left p-2">Staff</th>
+                    <th className="text-left p-2">Utilization</th>
+                    <th className="text-left p-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(
+                    Object.entries(
+                      staff.reduce((acc, s) => {
+                        if (!acc[s.department]) acc[s.department] = { staff: 0, patients: 0 }
+                        acc[s.department].staff += 1
+                        return acc
+                      }, patients.reduce((acc, p) => {
+                        if (!acc[p.department]) acc[p.department] = { staff: 0, patients: 0 }
+                        acc[p.department].patients += 1
+                        return acc
+                      }, {} as Record<string, { staff: number; patients: number }>))
+                    ) as [string, { staff: number; patients: number }][]
+                  ).map(([dept, { staff, patients }]) => (
+                    <tr key={dept} className="border-b">
+                      <td className="p-2">{dept}</td>
+                      <td className="p-2">{patients}</td>
+                      <td className="p-2">{staff}</td>
+                      <td className="p-2">{staff > 0 ? (patients / staff).toFixed(2) : "-"}</td>
+                      <td className="p-2">{patients > staff * 10 ? "Overloaded" : "Normal"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Salary Management Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Staff Salary Management</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Name</th>
+                    <th className="text-left p-2">Role</th>
+                    <th className="text-left p-2">Department</th>
+                    <th className="text-left p-2">Salary (₹/month)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {staff.map((s) => (
+                    <tr key={s.id} className="border-b">
+                      <td className="p-2">{s.name}</td>
+                      <td className="p-2">{s.role}</td>
+                      <td className="p-2">{s.department}</td>
+                      <td className="p-2">
+                        {typeof s.salary === "number" ? (
+                          <span className="font-semibold">₹{s.salary.toLocaleString()}</span>
+                        ) : (
+                          <span className="text-gray-400 italic">Not set</span>
+                        )}
+                      </td>
                     </tr>
                   </thead>
                   <tbody>

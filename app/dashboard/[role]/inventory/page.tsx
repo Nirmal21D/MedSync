@@ -50,6 +50,7 @@ export default function InventoryPage({ params }: { params: Promise<{ role: stri
   const [statusFilter, setStatusFilter] = useState("all")
   const [showAddItem, setShowAddItem] = useState(false)
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -128,7 +129,7 @@ export default function InventoryPage({ params }: { params: Promise<{ role: stri
             : newItem.quantity <= newItem.minThreshold
               ? "low-stock"
               : "available"
-          : "low-stock",
+          : "low-stock"
     }
     await setDoc(doc(db, "inventory", item.id), {
       ...item,
@@ -257,9 +258,21 @@ export default function InventoryPage({ params }: { params: Promise<{ role: stri
                   <div className="p-2 bg-orange-100 rounded-lg">
                     <Package className="h-6 w-6 text-orange-600" />
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Items</p>
-                    <p className="text-2xl font-bold">{filteredInventory.length}</p>
+
+                  <div className="flex flex-col gap-2 ml-4">
+                    <Button variant="outline" size="sm" type="button" onClick={() => setEditingItem(item)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      onClick={() => setDeleteConfirmId(item.id)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -389,6 +402,52 @@ export default function InventoryPage({ params }: { params: Promise<{ role: stri
             </Dialog>
           )}
         </div>
+
+        {filteredInventory.length === 0 && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No inventory items found</h3>
+                <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Edit Item Dialog */}
+        {editingItem && (
+          <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Edit Inventory Item</DialogTitle>
+                <DialogDescription>Update item details and stock levels</DialogDescription>
+              </DialogHeader>
+              <EditItemForm
+                item={editingItem}
+                onSubmit={handleUpdateItem}
+                onCancel={() => setEditingItem(null)}
+                role={role}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        {deleteConfirmId && (
+          <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Inventory Item</DialogTitle>
+                <DialogDescription>Are you sure you want to delete this item? This action cannot be undone.</DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
+                <Button variant="destructive" onClick={() => { handleDeleteItem(deleteConfirmId!); setDeleteConfirmId(null); }}>Delete</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </DashboardLayout>
   )
@@ -410,6 +469,7 @@ function AddItemForm({
     unit: string
     location: string
     minThreshold: string
+    cost: string
   }>({
     name: "",
     category: role === "pharmacist" ? "medicine" : "",
@@ -417,6 +477,7 @@ function AddItemForm({
     unit: "",
     location: "",
     minThreshold: "",
+    cost: "",
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -425,6 +486,8 @@ function AddItemForm({
       ...formData,
       quantity: Number.parseInt(formData.quantity) || 0,
       minThreshold: Number.parseInt(formData.minThreshold) || 0,
+      cost: formData.category === "medicine" ? Number.parseFloat(formData.cost) || 0 : undefined,
+      category: formData.category as "equipment" | "supplies" | "medicine",
     })
   }
 
@@ -498,6 +561,20 @@ function AddItemForm({
             min={0}
           />
         </div>
+        {formData.category === "medicine" && (
+          <div className="space-y-2">
+            <Label htmlFor="cost">Cost per Unit *</Label>
+            <Input
+              id="cost"
+              type="number"
+              min={0}
+              step="0.01"
+              value={formData.cost}
+              onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+              required
+            />
+          </div>
+        )}
       </div>
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>
@@ -527,6 +604,7 @@ function EditItemForm({
     unit: string
     location: string
     minThreshold: string
+    cost: string
   }>({
     name: item.name,
     category: item.category,
@@ -534,12 +612,14 @@ function EditItemForm({
     unit: item.unit,
     location: item.location,
     minThreshold: item.minThreshold.toString(),
+    cost: item.cost ? item.cost.toString() : "",
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const quantityNum = Number.parseInt(formData.quantity) || 0
     const minThresholdNum = Number.parseInt(formData.minThreshold) || 0
+    const costNum = formData.category === "medicine" ? Number.parseFloat(formData.cost) || 0 : undefined
     const updatedItem: InventoryItem = {
       ...item,
       name: formData.name,
@@ -548,6 +628,7 @@ function EditItemForm({
       unit: formData.unit,
       location: formData.location,
       minThreshold: minThresholdNum,
+      cost: costNum,
       status:
         quantityNum === 0
           ? "out-of-stock"
@@ -604,6 +685,7 @@ function EditItemForm({
             id="unit"
             value={formData.unit}
             onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+            placeholder="e.g., pieces, boxes, bottles"
             required
           />
         </div>
@@ -627,12 +709,26 @@ function EditItemForm({
             min={0}
           />
         </div>
+        {formData.category === "medicine" && (
+          <div className="space-y-2">
+            <Label htmlFor="cost">Cost per Unit *</Label>
+            <Input
+              id="cost"
+              type="number"
+              min={0}
+              step="0.01"
+              value={formData.cost}
+              onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+              required
+            />
+          </div>
+        )}
       </div>
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">Update Item</Button>
+        <Button type="submit">Save Changes</Button>
       </div>
     </form>
   )

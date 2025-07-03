@@ -89,8 +89,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-
-      <UserManagement />
       {/* Recent Alerts */}
       <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
         <CardHeader>

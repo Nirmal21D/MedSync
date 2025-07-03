@@ -20,9 +20,43 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { FileText, Plus, Search, Clock, User, Tag, AlertCircle, CheckCircle } from "lucide-react"
-import { collection, getDocs, setDoc, doc } from "firebase/firestore"
+import { collection, getDocs, setDoc, doc, deleteDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { NursingNote, Patient } from "@/lib/types"
+
+function formatDate(date: Date | string | number | { seconds: number, nanoseconds: number } | undefined): string {
+  if (!date) return "No Date"
+  
+  try {
+    let dateObj: Date
+    
+    if (date instanceof Date) {
+      dateObj = date
+    } else if (typeof date === 'string') {
+      dateObj = new Date(date)
+    } else if (typeof date === 'number') {
+      dateObj = new Date(date)
+    } else if (date && 'seconds' in date) {
+      // Firestore Timestamp handling
+      dateObj = new Date(date.seconds * 1000)
+    } else {
+      return "Invalid Date"
+    }
+    
+    return dateObj.toLocaleString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Kolkata' // Explicitly set to Indian time zone
+    })
+  } catch (error) {
+    console.error("Date formatting error:", error)
+    return "Invalid Date"
+  }
+}
 
 export default function NursingNotesPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
@@ -35,6 +69,16 @@ export default function NursingNotesPage({ params }: { params: Promise<{ role: s
   const [typeFilter, setTypeFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
   const [showAddNote, setShowAddNote] = useState(false)
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState("")
+  const [editFormData, setEditFormData] = useState({
+    patientName: "",
+    shift: "",
+    type: "",
+    content: "",
+    priority: "",
+    tags: "",
+  })
 
   useEffect(() => {
     if (!loading && !user) {
@@ -88,6 +132,10 @@ export default function NursingNotesPage({ params }: { params: Promise<{ role: s
       filtered = filtered.filter((note) => note.priority === priorityFilter)
     }
 
+    if (role === "nurse") {
+      filtered = filtered.filter((note) => note.nurseName === user?.name)
+    }
+
     return filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
   }
 
@@ -95,12 +143,36 @@ export default function NursingNotesPage({ params }: { params: Promise<{ role: s
 
   const handleAddNote = async (newNote: Partial<NursingNote>) => {
     if (!db) return
+
+    if (editingNoteId) {
+      // Edit existing note
+      await setDoc(doc(db, "nursingNotes", editingNoteId), {
+        ...notes.find(n => n.id === editingNoteId),
+        ...newNote,
+        timestamp: new Date(), // Optionally update timestamp
+      })
+      setNotes(notes.map(n => n.id === editingNoteId ? { ...n, ...newNote, timestamp: new Date() } : n))
+      setEditingNoteId(null)
+      setEditContent("")
+      setEditFormData({
+        patientName: "",
+        shift: "",
+        type: "",
+        content: "",
+        priority: "",
+        tags: "",
+      })
+      setShowAddNote(false)
+      return
+    }
+
+    // Add new note
     const note: NursingNote = {
       id: String(Date.now()),
       patientId: newNote.patientId || "",
       patientName: newNote.patientName || "",
-      nurseId: "nurse1",
-      nurseName: "Current Nurse",
+      nurseId: user?.uid || "",
+      nurseName: user?.name || user?.displayName || "",
       shift: (newNote.shift as "morning" | "afternoon" | "night") || "morning",
       type: (newNote.type as "general" | "medication" | "vitals" | "observation" | "handover") || "general",
       content: newNote.content || "",
@@ -161,7 +233,28 @@ export default function NursingNotesPage({ params }: { params: Promise<{ role: s
                 <DialogTitle>Add Nursing Note</DialogTitle>
                 <DialogDescription>Document patient care or observations</DialogDescription>
               </DialogHeader>
-              <AddNoteForm onSubmit={handleAddNote} onCancel={() => setShowAddNote(false)} patients={patients as Patient[]} />
+              <AddNoteForm
+                onSubmit={handleAddNote}
+                onCancel={() => {
+                  setShowAddNote(false)
+                  setEditingNoteId(null)
+                  setEditContent("")
+                  setEditFormData({
+                    patientName: "",
+                    shift: "",
+                    type: "",
+                    content: "",
+                    priority: "",
+                    tags: "",
+                  })
+                }}
+                patients={patients as Patient[]}
+                editContent={editContent}
+                setEditContent={setEditContent}
+                editingNoteId={editingNoteId}
+                editFormData={editFormData}
+                setEditFormData={setEditFormData}
+              />
             </DialogContent>
           </Dialog>
         </div>
@@ -285,50 +378,90 @@ export default function NursingNotesPage({ params }: { params: Promise<{ role: s
 
         {/* Notes List */}
         <div className="space-y-4">
-          {filteredNotes.map((note) => (
-            <Card key={note.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-lg">{getTypeIcon(note.type)}</span>
-                      <h3 className="text-lg font-semibold">{note.patientName}</h3>
-                      <Badge variant={getPriorityColor(note.priority)} className="capitalize">
-                        {note.priority}
-                      </Badge>
-                      <Badge variant="outline" className="capitalize">
-                        {note.type}
-                      </Badge>
-                      <Badge variant="secondary" className="capitalize">
-                        {note.shift}
-                      </Badge>
-                    </div>
+          {filteredNotes.map((note) => {
+            const canEdit =
+              note.nurseId === user?.uid &&
+              (Date.now() - new Date(note.timestamp).getTime()) < 10 * 60 * 1000 // 10 minutes
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <User className="mr-2 h-4 w-4" />
-                        {note.nurseName}
+            return (
+              <Card key={note.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-lg">{getTypeIcon(note.type)}</span>
+                        <h3 className="text-lg font-semibold">{note.patientName}</h3>
+                        <Badge variant={getPriorityColor(note.priority)} className="capitalize">
+                          {note.priority}
+                        </Badge>
+                        <Badge variant="outline" className="capitalize">
+                          {note.type}
+                        </Badge>
+                        <Badge variant="secondary" className="capitalize">
+                          {note.shift}
+                        </Badge>
                       </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Clock className="mr-2 h-4 w-4" />
-                        {new Date(note.timestamp).toLocaleString()}
-                      </div>
-                      {note.tags && note.tags.length > 0 && (
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                         <div className="flex items-center text-sm text-gray-600">
-                          <Tag className="mr-2 h-4 w-4" />
-                          {note.tags.join(", ")}
+                          <User className="mr-2 h-4 w-4" />
+                          {note.nurseName}
                         </div>
-                      )}
-                    </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Clock className="mr-2 h-4 w-4" />
+                          {formatDate(note.timestamp)}
+                        </div>
+                        {note.tags && note.tags.length > 0 && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Tag className="mr-2 h-4 w-4" />
+                            {note.tags.join(", ")}
+                          </div>
+                        )}
+                      </div>
 
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-gray-800">{note.content}</p>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-gray-800">{note.content}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="flex gap-2 mt-2">
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingNoteId(note.id)
+                          setEditContent(note.content)
+                          setShowAddNote(true)
+                          setEditFormData({
+                            patientName: note.patientName,
+                            shift: note.shift,
+                            type: note.type,
+                            content: note.content,
+                            priority: note.priority,
+                            tags: (note.tags || []).join(", "),
+                          })
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={async () => {
+                        if (!db) return
+                        await deleteDoc(doc(db, "nursingNotes", note.id))
+                        setNotes(notes.filter(n => n.id !== note.id))
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
 
         {filteredNotes.length === 0 && (
@@ -351,10 +484,20 @@ function AddNoteForm({
   onSubmit,
   onCancel,
   patients,
+  editContent,
+  setEditContent,
+  editingNoteId,
+  editFormData,
+  setEditFormData,
 }: {
   onSubmit: (note: Partial<NursingNote>) => void
   onCancel: () => void
   patients: Patient[]
+  editContent: string
+  setEditContent: React.Dispatch<React.SetStateAction<string>>
+  editingNoteId: string | null
+  editFormData: any
+  setEditFormData: React.Dispatch<React.SetStateAction<any>>
 }) {
   const [formData, setFormData] = useState({
     patientName: "",
@@ -365,19 +508,36 @@ function AddNoteForm({
     tags: "",
   })
 
+  useEffect(() => {
+    if (editingNoteId) {
+      setFormData(editFormData)
+    }
+  }, [editingNoteId, editFormData])
+
+  const handleChange = (field: string, value: string) => {
+    if (editingNoteId) {
+      setEditFormData((prev: any) => ({ ...prev, [field]: value }))
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const data = editingNoteId ? editFormData : formData
     onSubmit({
-      ...formData,
-      shift: formData.shift as "morning" | "afternoon" | "night",
-      type: formData.type as "general" | "medication" | "vitals" | "observation" | "handover",
-      priority: formData.priority as "low" | "medium" | "high",
-      tags: formData.tags
+      ...data,
+      shift: data.shift as "morning" | "afternoon" | "night",
+      type: data.type as "general" | "medication" | "vitals" | "observation" | "handover",
+      priority: data.priority as "low" | "medium" | "high",
+      tags: data.tags
         .split(",")
-        .map((tag) => tag.trim())
+        .map((tag: string) => tag.trim())
         .filter(Boolean),
     })
   }
+
+  const data = editingNoteId ? editFormData : formData
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -385,8 +545,8 @@ function AddNoteForm({
         <div className="space-y-2">
           <Label htmlFor="patientName">Patient *</Label>
           <Select
-            value={formData.patientName}
-            onValueChange={(value) => setFormData({ ...formData, patientName: value })}
+            value={data.patientName}
+            onValueChange={(value) => handleChange("patientName", value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select patient" />
@@ -402,7 +562,7 @@ function AddNoteForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="shift">Shift *</Label>
-          <Select value={formData.shift} onValueChange={(value) => setFormData({ ...formData, shift: value })}>
+          <Select value={data.shift} onValueChange={(value) => handleChange("shift", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select shift" />
             </SelectTrigger>
@@ -415,7 +575,7 @@ function AddNoteForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="type">Note Type *</Label>
-          <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+          <Select value={data.type} onValueChange={(value) => handleChange("type", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
@@ -430,7 +590,7 @@ function AddNoteForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="priority">Priority *</Label>
-          <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value })}>
+          <Select value={data.priority} onValueChange={(value) => handleChange("priority", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
@@ -446,8 +606,8 @@ function AddNoteForm({
         <Label htmlFor="content">Note Content *</Label>
         <Textarea
           id="content"
-          value={formData.content}
-          onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+          value={data.content}
+          onChange={(e) => handleChange("content", e.target.value)}
           rows={4}
           placeholder="Enter detailed nursing note..."
           required
@@ -457,8 +617,8 @@ function AddNoteForm({
         <Label htmlFor="tags">Tags (comma-separated)</Label>
         <Input
           id="tags"
-          value={formData.tags}
-          onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+          value={data.tags}
+          onChange={(e) => handleChange("tags", e.target.value)}
           placeholder="e.g., medication, vitals, fever"
         />
       </div>
@@ -466,7 +626,7 @@ function AddNoteForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">Add Note</Button>
+        <Button type="submit">{editingNoteId ? "Save Changes" : "Add Note"}</Button>
       </div>
     </form>
   )
