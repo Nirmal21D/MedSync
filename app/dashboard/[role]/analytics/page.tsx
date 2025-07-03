@@ -329,16 +329,18 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(
-                    staff.reduce((acc, s) => {
-                      if (!acc[s.department]) acc[s.department] = { staff: 0, patients: 0 }
-                      acc[s.department].staff += 1
-                      return acc
-                    }, patients.reduce((acc, p) => {
-                      if (!acc[p.department]) acc[p.department] = { staff: 0, patients: 0 }
-                      acc[p.department].patients += 1
-                      return acc
-                    }, {} as Record<string, { staff: number; patients: number }>))
+                  {(
+                    Object.entries(
+                      staff.reduce((acc, s) => {
+                        if (!acc[s.department]) acc[s.department] = { staff: 0, patients: 0 }
+                        acc[s.department].staff += 1
+                        return acc
+                      }, patients.reduce((acc, p) => {
+                        if (!acc[p.department]) acc[p.department] = { staff: 0, patients: 0 }
+                        acc[p.department].patients += 1
+                        return acc
+                      }, {} as Record<string, { staff: number; patients: number }>))
+                    ) as [string, { staff: number; patients: number }][]
                   ).map(([dept, { staff, patients }]) => (
                     <tr key={dept} className="border-b">
                       <td className="p-2">{dept}</td>

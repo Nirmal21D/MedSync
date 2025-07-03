@@ -83,7 +83,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth || !db) return;
     try {
       const result = await signInWithEmailAndPassword(auth, email, password)
-<<<<<<< HEAD
 
       // Fetch user data from Firestore
       const snap = await getDoc(doc(db, "users", result.user.uid))
@@ -93,15 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.push("/inactive")
         return
       }
-
-      // Persist / update role on Firestore
-=======
-      // Fetch user role from Firestore
-      const snap = await getDoc(doc(db, "users", result.user.uid))
-      const data = snap.data()
       setUser({ ...result.user, role: data?.role, name: data?.name })
-      // Optionally update lastLogin, but do not set role
->>>>>>> 4d7b7fcdcea0bb91604c14657eed62b2ad6ba370
+      // Persist / update role on Firestore
       await setDoc(
         doc(db, "users", result.user.uid),
         {
