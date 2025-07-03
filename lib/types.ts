@@ -159,6 +159,7 @@ export interface InventoryItem {
   lastUpdated: Date
   minThreshold: number
   status: "available" | "low-stock" | "out-of-stock"
+  cost?: number
 }
 
 export interface Staff {
@@ -171,6 +172,7 @@ export interface Staff {
   phone: string
   status: "active" | "inactive"
   joinDate: Date
+  salary?: number
 }
 
 export interface Notification {
@@ -183,4 +185,18 @@ export interface Notification {
   read: boolean
   createdAt: Date
   actionUrl?: string
+}
+
+export interface MedicineReminder {
+  id: string
+  patientId: string
+  patientName: string
+  medicineName: string
+  dosage: string
+  frequency: string
+  startDate: Date
+  endDate?: Date
+  timeOfDay: string[] // e.g., ["morning", "evening"]
+  status: 'active' | 'completed' | 'paused'
+  prescriptionId?: string
 }

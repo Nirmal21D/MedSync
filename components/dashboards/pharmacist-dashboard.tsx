@@ -152,7 +152,7 @@ export default function PharmacistDashboard() {
       )}
 
       {/* Pending Prescriptions */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
             <FileText className="mr-2 h-5 w-5" />
@@ -224,7 +224,7 @@ export default function PharmacistDashboard() {
             <p className="text-gray-500 text-center py-8">No pending prescriptions</p>
           )}
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Medicine Inventory */}
       <Card>

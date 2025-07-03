@@ -26,6 +26,10 @@ import type { Staff } from "@/lib/types"
 import { createUserWithEmailAndPassword } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 
+function removeUndefined(obj: Record<string, any>) {
+  return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
+}
+
 export default function StaffPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
   const router = useRouter()
@@ -76,12 +80,6 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
       router.push(`/dashboard/${user.role}`)
     }
   }, [user, loading, role, router])
-
-  useEffect(() => {
-    if (!loading && user && user.status === "inactive") {
-      router.push("/inactive") // or show a message, or redirect to login
-    }
-  }, [user, loading, router])
 
   if (loading) {
     return (
@@ -143,12 +141,13 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
         phone: newStaff.phone || "",
         status: "active",
         joinDate: new Date(),
+        salary: typeof newStaff.salary === "number" ? newStaff.salary : undefined,
       }
-      await setDoc(doc(db, "users", uid), {
+      await setDoc(doc(db, "users", uid), removeUndefined({
         ...staffMember,
         joinDate: staffMember.joinDate.toISOString(),
         // Do NOT store password in Firestore for security!
-      })
+      }))
       setStaff([...staff, staffMember])
       setShowAddStaff(false)
     } catch (error: any) {
@@ -159,12 +158,12 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
 
   const handleUpdateStaff = async (updatedStaff: Staff) => {
     if (!db) return
-    await setDoc(doc(db, "users", updatedStaff.id), {
+    await setDoc(doc(db, "users", updatedStaff.id), removeUndefined({
       ...updatedStaff,
       joinDate: updatedStaff.joinDate instanceof Date
         ? updatedStaff.joinDate.toISOString()
         : updatedStaff.joinDate,
-    })
+    }))
     setStaff(staff.map((s) => (s.id === updatedStaff.id ? updatedStaff : s)))
     setEditingStaff(null)
   }
@@ -181,12 +180,12 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
     if (!staffMember) return
     const updatedStatus = staffMember.status === "active" ? "inactive" : "active"
     const updatedStaffMember = { ...staffMember, status: updatedStatus as "active" | "inactive" }
-    await setDoc(doc(db, "users", staffId), {
+    await setDoc(doc(db, "users", staffId), removeUndefined({
       ...updatedStaffMember,
       joinDate: updatedStaffMember.joinDate instanceof Date
         ? updatedStaffMember.joinDate.toISOString()
         : updatedStaffMember.joinDate,
-    })
+    }))
     setStaff(staff.map((s) => (s.id === staffId ? updatedStaffMember : s)))
   }
 
@@ -446,12 +445,14 @@ function AddStaffForm({
     department: "",
     phone: "",
     password: "",
+    salary: "",
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit({
       ...formData,
+      salary: formData.salary !== "" ? Number(formData.salary) : undefined,
       role: (formData.role ? formData.role : "doctor") as "admin" | "doctor" | "nurse" | "pharmacist" | "receptionist",
     })
   }
@@ -521,6 +522,17 @@ function AddStaffForm({
           />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="salary">Salary (₹/month)</Label>
+          <Input
+            id="salary"
+            type="number"
+            value={formData.salary}
+            onChange={e => setFormData({ ...formData, salary: e.target.value })}
+            min={0}
+            placeholder="Enter salary"
+          />
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="password">Password *</Label>
           <Input
             id="password"
@@ -557,6 +569,7 @@ function EditStaffForm({
     specialization: staff.specialization || "",
     department: staff.department,
     phone: staff.phone,
+    salary: staff.salary !== undefined ? String(staff.salary) : "",
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -569,6 +582,7 @@ function EditStaffForm({
       specialization: formData.specialization || undefined,
       department: formData.department,
       phone: formData.phone,
+      salary: formData.salary !== "" ? Number(formData.salary) : undefined,
     }
     onSubmit(updatedStaff)
   }
@@ -635,6 +649,17 @@ function EditStaffForm({
             value={formData.specialization}
             onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
             placeholder="For doctors only"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="salary">Salary (₹/month)</Label>
+          <Input
+            id="salary"
+            type="number"
+            value={formData.salary}
+            onChange={e => setFormData({ ...formData, salary: e.target.value })}
+            min={0}
+            placeholder="Enter salary"
           />
         </div>
       </div>

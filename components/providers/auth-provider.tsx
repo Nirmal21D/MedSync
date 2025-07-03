@@ -14,11 +14,11 @@ import { doc, getDoc, setDoc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 
 const DEMO_USERS = [
-  { email: "admin@medsync.com", role: "admin" },
-  { email: "doctor@medsync.com", role: "doctor" },
-  { email: "nurse@medsync.com", role: "nurse" },
-  { email: "pharmacist@medsync.com", role: "pharmacist" },
-  { email: "receptionist@medsync.com", role: "receptionist" },
+  { email: "admin@gmail.com", role: "admin" },
+  { email: "doctor1@gmail.com", role: "doctor" },
+  { email: "nurse1@gmail.com", role: "nurse" },
+  { email: "pharmacist1@gmail.com", role: "pharmacist" },
+  { email: "receptionist1@gmail.com", role: "receptionist" },
 ] as const
 
 interface User extends FirebaseUser {
@@ -52,6 +52,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (db) {
           const snap = await getDoc(doc(db, "users", firebaseUser.uid))
           const data = snap.data()
+          if (data?.status === "inactive") {
+            if (auth) await firebaseSignOut(auth)
+            router.push("/inactive")
+            return
+          }
           setUser({ ...firebaseUser, role: data?.role, name: data?.name, status: data?.status })
         } else {
           setUser({ ...firebaseUser })
@@ -75,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         role: match?.role,
         displayName: email.split("@")[0],
+        status: "active", // or "inactive" if you want to simulate
       } as User)
       return
     }
@@ -88,11 +94,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const snap = await getDoc(doc(db, "users", result.user.uid))
       const data = snap.data()
       if (data?.status === "inactive") {
-        await firebaseSignOut(auth)
+        if (auth) await firebaseSignOut(auth)
         router.push("/inactive")
         return
       }
-      setUser({ ...result.user, role: data?.role, name: data?.name })
+      setUser({ ...result.user, role: data?.role, name: data?.name, status: data?.status })
       // Persist / update role on Firestore
       await setDoc(
         doc(db, "users", result.user.uid),
@@ -114,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email,
             role: match.role,
             displayName: email.split("@")[0],
+            status: "active",
           } as User)
           return
         }

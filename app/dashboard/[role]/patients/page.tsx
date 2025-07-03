@@ -472,10 +472,10 @@ function AddPatientForm({
       age: Number.parseInt(formData.age) || 0,
       gender: formData.gender as "male" | "female" | "other",
       vitals: {
-        bloodPressure: formData.bloodPressure || undefined,
-        heartRate: formData.heartRate ? Number(formData.heartRate) : undefined,
-        temperature: formData.temperature ? Number(formData.temperature) : undefined,
-        oxygenSaturation: formData.oxygenSaturation ? Number(formData.oxygenSaturation) : undefined,
+        bloodPressure: formData.bloodPressure || "",
+        heartRate: formData.heartRate ? Number(formData.heartRate) : 0,
+        temperature: formData.temperature ? Number(formData.temperature) : 0,
+        oxygenSaturation: formData.oxygenSaturation ? Number(formData.oxygenSaturation) : 0,
       },
     })
   }

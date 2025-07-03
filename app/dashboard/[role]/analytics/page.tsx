@@ -115,10 +115,10 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
   // Only admin can access analytics
   useEffect(() => {
-    if (!loading && user && role !== "admin") {
+    if (!loading && user && user.role !== "admin") {
       router.push(`/dashboard/${user.role}`)
     }
-  }, [user, loading, role, router])
+  }, [user, loading, router])
 
   if (loading) {
     return (
@@ -132,8 +132,12 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
 
-  const totalRevenue = 0
-  const totalExpenses = 0
+  const totalRevenue = patients.reduce((sum: number, p: { bills?: Array<{ total?: number }> }) =>
+    sum + (Array.isArray(p.bills) ? p.bills.reduce((bSum: number, b: { total?: number }) => bSum + (b.total || 0), 0) : 0)
+  , 0);
+  const totalExpenses = staff.reduce((sum, s) =>
+    sum + (typeof s.salary === "number" ? s.salary : 0)
+  , 0);
   const totalProfit = totalRevenue - totalExpenses
 
   const financialData = [
@@ -172,7 +176,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$0</div>
+              <div className="text-2xl font-bold">₹{totalRevenue.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
                 <TrendingUp className="inline h-3 w-3 mr-1" />
                 +0% from last period
@@ -182,13 +186,13 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+              <TrendingDown className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalPatients}</div>
+              <div className="text-2xl font-bold text-red-600">₹{totalExpenses.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
-                <TrendingUp className="inline h-3 w-3 mr-1" />
+                <TrendingDown className="inline h-3 w-3 mr-1" />
                 +0% from last period
               </p>
             </CardContent>
@@ -196,11 +200,11 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Staff Members</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalStaff}</div>
+              <div className="text-2xl font-bold text-green-600">₹{totalProfit.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
                 <TrendingUp className="inline h-3 w-3 mr-1" />
                 +0% from last period
@@ -236,7 +240,10 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis allowDecimals={false} />
-                    <Tooltip />
+                    <Tooltip labelFormatter={(value) => {
+                      const date = new Date(value);
+                      return new Date(date.getFullYear() + "-" + (date.getMonth() + 1) + "-01").toLocaleString("default", { month: "short", year: "numeric" });
+                    }} />
                     <Line type="monotone" dataKey="count" stroke="#ff6b6b" strokeWidth={3} dot={{ r: 4, fill: "#1e293b" }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -257,7 +264,10 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="department" />
                     <YAxis allowDecimals={false} />
-                    <Tooltip />
+                    <Tooltip labelFormatter={(value) => {
+                      const date = new Date(value);
+                      return new Date(date.getFullYear() + "-" + (date.getMonth() + 1) + "-01").toLocaleString("default", { month: "short", year: "numeric" });
+                    }} />
                     <Bar dataKey="patients" fill="#8884d8" name="Patients" />
                     <Bar dataKey="staff" fill="#82ca9d" name="Staff" />
                   </BarChart>
@@ -281,7 +291,10 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip labelFormatter={(value) => {
+                    const date = new Date(value);
+                    return new Date(date.getFullYear() + "-" + (date.getMonth() + 1) + "-01").toLocaleString("default", { month: "short", year: "numeric" });
+                  }} />
                   <Area type="monotone" dataKey="revenue" stroke="#82ca9d" fill="#82ca9d" name="Revenue" />
                   <Area type="monotone" dataKey="expenses" stroke="#8884d8" fill="#8884d8" name="Expenses" />
                 </AreaChart>
@@ -300,7 +313,10 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="category" />
                     <YAxis allowDecimals={false} />
-                    <Tooltip />
+                    <Tooltip labelFormatter={(value) => {
+                      const date = new Date(value);
+                      return new Date(date.getFullYear() + "-" + (date.getMonth() + 1) + "-01").toLocaleString("default", { month: "short", year: "numeric" });
+                    }} />
                     <Bar dataKey="count" fill="#8884d8" name="Items" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -346,8 +362,45 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                       <td className="p-2">{dept}</td>
                       <td className="p-2">{patients}</td>
                       <td className="p-2">{staff}</td>
-                      <td className="p-2">-</td>
-                      <td className="p-2">-</td>
+                      <td className="p-2">{staff > 0 ? (patients / staff).toFixed(2) : "-"}</td>
+                      <td className="p-2">{patients > staff * 10 ? "Overloaded" : "Normal"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Salary Management Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Staff Salary Management</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Name</th>
+                    <th className="text-left p-2">Role</th>
+                    <th className="text-left p-2">Department</th>
+                    <th className="text-left p-2">Salary (₹/month)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {staff.map((s) => (
+                    <tr key={s.id} className="border-b">
+                      <td className="p-2">{s.name}</td>
+                      <td className="p-2">{s.role}</td>
+                      <td className="p-2">{s.department}</td>
+                      <td className="p-2">
+                        {typeof s.salary === "number" ? (
+                          <span className="font-semibold">₹{s.salary.toLocaleString()}</span>
+                        ) : (
+                          <span className="text-gray-400 italic">Not set</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
