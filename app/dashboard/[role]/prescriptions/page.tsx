@@ -157,7 +157,7 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
                   <DialogTitle>Create New Prescription</DialogTitle>
                   <DialogDescription>Add medicines and instructions for a patient</DialogDescription>
                 </DialogHeader>
-                <AddPrescriptionForm onSubmit={handleAddPrescription} onCancel={() => setShowAddPrescription(false)} />
+                <AddPrescriptionForm onSubmit={handleAddPrescription} onCancel={() => setShowAddPrescription(false)} patients={patients} />
               </DialogContent>
             </Dialog>
           )}
@@ -370,8 +370,8 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
 function AddPrescriptionForm({
   onSubmit,
   onCancel,
-}: { onSubmit: (prescription: Partial<Prescription>) => void; onCancel: () => void }) {
-  const { patients } = useAuth()
+  patients = [],
+}: { onSubmit: (prescription: Partial<Prescription>) => void; onCancel: () => void; patients: Patient[] }) {
   const [formData, setFormData] = useState({
     patientName: "",
     notes: "",
@@ -416,7 +416,7 @@ function AddPrescriptionForm({
             <SelectValue placeholder="Select patient" />
           </SelectTrigger>
           <SelectContent>
-            {patients.map((patient) => (
+            {(patients ?? []).map((patient: Patient) => (
               <SelectItem key={patient.id} value={patient.name}>
                 {patient.name} - {patient.diagnosis}
               </SelectItem>

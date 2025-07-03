@@ -22,7 +22,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Search, Plus, Eye, FileText, Heart, Phone, MapPin, Calendar, Activity } from "lucide-react"
-import { collection, getDocs, setDoc, doc } from "firebase/firestore"
+import { collection, getDocs, setDoc, doc, updateDoc, deleteField } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Patient } from "@/lib/types"
 
@@ -35,6 +35,14 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [showAddPatient, setShowAddPatient] = useState(false)
+  const [showEditPatient, setShowEditPatient] = useState(false)
+  const [editPatientData, setEditPatientData] = useState<Patient | null>(null)
+  const [showDischargeConfirm, setShowDischargeConfirm] = useState(false)
+  const [dischargePatientId, setDischargePatientId] = useState<string | null>(null)
+  const [showAddNote, setShowAddNote] = useState(false)
+  const [notePatient, setNotePatient] = useState<Patient | null>(null)
+  const [noteContent, setNoteContent] = useState("")
+  const [deletingHistoryIndex, setDeletingHistoryIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -63,7 +71,8 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
 
     // Role-based filtering
     if (role === "doctor") {
-      filtered = patients.filter((p) => p.assignedDoctor === "Dr. Sarah Johnson") // Mock current doctor
+      const doctorName = user?.displayName || user?.name || "Dr. Sarah Johnson";
+      filtered = patients.filter((p) => p.assignedDoctor === doctorName)
     } else if (role === "nurse") {
       filtered = patients // In real app, filter by assigned nurse
     }
@@ -115,6 +124,32 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
     await setDoc(doc(db, "patients", patient.id), patient)
     setPatients([...patients, patient])
     setShowAddPatient(false)
+  }
+
+  const handleEditPatient = async (updated: Patient) => {
+    if (!db) return
+    await setDoc(doc(db, "patients", updated.id), updated, { merge: true })
+    setPatients(patients.map((p) => (p.id === updated.id ? updated : p)))
+    setShowEditPatient(false)
+    setEditPatientData(null)
+  }
+
+  const handleDischargePatient = async (id: string) => {
+    if (!db) return
+    await setDoc(doc(db, "patients", id), { status: "discharged", assignedBed: deleteField() }, { merge: true })
+    setPatients(patients.map((p) => (p.id === id ? { ...p, status: "discharged", assignedBed: undefined } : p)))
+    setShowDischargeConfirm(false)
+    setDischargePatientId(null)
+  }
+
+  const handleAddNote = async () => {
+    if (!db || !notePatient) return
+    const updatedHistory = [...(notePatient.history || []), noteContent]
+    await setDoc(doc(db, "patients", notePatient.id), { history: updatedHistory }, { merge: true })
+    setPatients(patients.map((p) => (p.id === notePatient.id ? { ...p, history: updatedHistory } : p)))
+    setShowAddNote(false)
+    setNotePatient(null)
+    setNoteContent("")
   }
 
   return (
@@ -287,15 +322,15 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
                       <div className="space-y-2">
                         <p className="text-sm font-medium text-gray-900">Vitals</p>
                         <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>BP: {patient.vitals.bloodPressure}</div>
-                          <div>HR: {patient.vitals.heartRate} bpm</div>
-                          <div>Temp: {patient.vitals.temperature}°F</div>
-                          <div>O2: {patient.vitals.oxygenSaturation}%</div>
+                          <div>BP: {patient.vitals?.bloodPressure ?? "N/A"}</div>
+                          <div>HR: {patient.vitals?.heartRate ?? "N/A"} bpm</div>
+                          <div>Temp: {patient.vitals?.temperature ?? "N/A"}°F</div>
+                          <div>O2: {patient.vitals?.oxygenSaturation ?? "N/A"}%</div>
                         </div>
                       </div>
                     </div>
 
-                    {patient.history.length > 0 && (
+                    {(patient.history?.length ?? 0) > 0 && (
                       <div className="mb-4">
                         <p className="text-sm font-medium text-gray-900 mb-1">Medical History</p>
                         <div className="space-y-1">
@@ -318,15 +353,28 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                        <PatientDetailsModal patient={patient} role={role} />
+                        <PatientDetailsModal patient={patient} role={role} onUpdateHistory={async (updatedHistory) => {
+                          if (!db) return;
+                          await setDoc(doc(db, "patients", patient.id), { history: updatedHistory }, { merge: true });
+                          setPatients(patients.map((p) => (p.id === patient.id ? { ...p, history: updatedHistory } : p)));
+                        }} />
                       </DialogContent>
                     </Dialog>
 
-                    {(role === "doctor" || role === "nurse") && (
-                      <Button variant="outline" size="sm">
-                        <FileText className="mr-2 h-4 w-4" />
-                        Add Note
-                      </Button>
+                    {role === "doctor" && (
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => { setEditPatientData(patient); setShowEditPatient(true); }}>
+                          Edit
+                        </Button>
+                        {patient.status !== "discharged" && (
+                          <Button variant="outline" size="sm" onClick={() => { setDischargePatientId(patient.id); setShowDischargeConfirm(true); }}>
+                            Discharge
+                          </Button>
+                        )}
+                        <Button variant="outline" size="sm" onClick={() => { setNotePatient(patient); setShowAddNote(true); }}>
+                          Add Note
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -346,6 +394,51 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
             </CardContent>
           </Card>
         )}
+
+        {showEditPatient && editPatientData && (
+          <Dialog open={showEditPatient} onOpenChange={setShowEditPatient}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Edit Patient</DialogTitle>
+              </DialogHeader>
+              <AddPatientForm
+                onSubmit={(data) => handleEditPatient({ ...editPatientData, ...data })}
+                onCancel={() => setShowEditPatient(false)}
+                initialData={editPatientData}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {showDischargeConfirm && dischargePatientId && (
+          <Dialog open={showDischargeConfirm} onOpenChange={setShowDischargeConfirm}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Discharge Patient</DialogTitle>
+                <DialogDescription>Are you sure you want to discharge this patient?</DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowDischargeConfirm(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={() => handleDischargePatient(dischargePatientId)}>Discharge</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {showAddNote && notePatient && (
+          <Dialog open={showAddNote} onOpenChange={setShowAddNote}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Note for {notePatient.name}</DialogTitle>
+              </DialogHeader>
+              <Textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} placeholder="Enter note..." />
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" onClick={() => setShowAddNote(false)}>Cancel</Button>
+                <Button onClick={handleAddNote} disabled={!noteContent.trim()}>Add Note</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </DashboardLayout>
   )
@@ -354,17 +447,22 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
 function AddPatientForm({
   onSubmit,
   onCancel,
-}: { onSubmit: (patient: Partial<Patient>) => void; onCancel: () => void }) {
+  initialData,
+}: { onSubmit: (patient: Partial<Patient>) => void; onCancel: () => void; initialData?: Patient }) {
   const [formData, setFormData] = useState({
-    name: "",
-    age: "",
-    gender: "",
-    phone: "",
-    email: "",
-    address: "",
-    diagnosis: "",
-    assignedDoctor: "",
-    assignedBed: "",
+    name: initialData?.name || "",
+    age: initialData?.age?.toString() || "",
+    gender: initialData?.gender || "",
+    phone: initialData?.phone || "",
+    email: initialData?.email || "",
+    address: initialData?.address || "",
+    diagnosis: initialData?.diagnosis || "",
+    assignedDoctor: initialData?.assignedDoctor || "",
+    assignedBed: initialData?.assignedBed || "",
+    bloodPressure: initialData?.vitals?.bloodPressure || "",
+    heartRate: initialData?.vitals?.heartRate?.toString() || "",
+    temperature: initialData?.vitals?.temperature?.toString() || "",
+    oxygenSaturation: initialData?.vitals?.oxygenSaturation?.toString() || "",
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -372,7 +470,13 @@ function AddPatientForm({
     onSubmit({
       ...formData,
       age: Number.parseInt(formData.age) || 0,
-      gender: formData.gender as "male" | "female" | "other"
+      gender: formData.gender as "male" | "female" | "other",
+      vitals: {
+        bloodPressure: formData.bloodPressure || undefined,
+        heartRate: formData.heartRate ? Number(formData.heartRate) : undefined,
+        temperature: formData.temperature ? Number(formData.temperature) : undefined,
+        oxygenSaturation: formData.oxygenSaturation ? Number(formData.oxygenSaturation) : undefined,
+      },
     })
   }
 
@@ -455,6 +559,48 @@ function AddPatientForm({
           rows={3}
         />
       </div>
+      {/* Vitals Section */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="bloodPressure">Blood Pressure</Label>
+          <Input
+            id="bloodPressure"
+            value={formData.bloodPressure}
+            onChange={(e) => setFormData({ ...formData, bloodPressure: e.target.value })}
+            placeholder="e.g., 120/80"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="heartRate">Heart Rate</Label>
+          <Input
+            id="heartRate"
+            type="number"
+            value={formData.heartRate}
+            onChange={(e) => setFormData({ ...formData, heartRate: e.target.value })}
+            placeholder="e.g., 72"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="temperature">Temperature (°F)</Label>
+          <Input
+            id="temperature"
+            type="number"
+            value={formData.temperature}
+            onChange={(e) => setFormData({ ...formData, temperature: e.target.value })}
+            placeholder="e.g., 98.6"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="oxygenSaturation">O2 Saturation (%)</Label>
+          <Input
+            id="oxygenSaturation"
+            type="number"
+            value={formData.oxygenSaturation}
+            onChange={(e) => setFormData({ ...formData, oxygenSaturation: e.target.value })}
+            placeholder="e.g., 98"
+          />
+        </div>
+      </div>
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
@@ -465,7 +611,27 @@ function AddPatientForm({
   )
 }
 
-function PatientDetailsModal({ patient, role }: { patient: Patient; role: string }) {
+function PatientDetailsModal({ patient, role, onUpdateHistory }: { patient: Patient; role: string; onUpdateHistory?: (updatedHistory: string[]) => void }) {
+  const [editingHistoryIndex, setEditingHistoryIndex] = useState<number | null>(null);
+  const [editingHistoryValue, setEditingHistoryValue] = useState("");
+
+  const handleEditHistory = async (index: number, newValue: string) => {
+    if (!onUpdateHistory) return;
+    const updatedHistory = [...(patient.history || [])];
+    updatedHistory[index] = newValue;
+    await onUpdateHistory(updatedHistory);
+    setEditingHistoryIndex(null);
+    setEditingHistoryValue("");
+  };
+  const handleDeleteHistory = async (index: number) => {
+    if (!onUpdateHistory) return;
+    const updatedHistory = [...(patient.history || [])];
+    updatedHistory.splice(index, 1);
+    await onUpdateHistory(updatedHistory);
+    setEditingHistoryIndex(null);
+    setEditingHistoryValue("");
+  };
+
   return (
     <div className="space-y-6">
       <DialogHeader>
@@ -480,7 +646,7 @@ function PatientDetailsModal({ patient, role }: { patient: Patient; role: string
           </Badge>
         </DialogTitle>
         <DialogDescription>
-          Patient ID: {patient.id} • Admitted: {patient.admissionDate.toLocaleDateString()}
+          Patient ID: {patient.id} • Admitted: {patient.admissionDate ? patient.admissionDate.toLocaleDateString() : "N/A"}
         </DialogDescription>
       </DialogHeader>
 
@@ -542,25 +708,25 @@ function PatientDetailsModal({ patient, role }: { patient: Patient; role: string
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3 bg-blue-50 rounded-lg">
               <p className="text-sm font-medium text-blue-600">Blood Pressure</p>
-              <p className="text-lg font-bold">{patient.vitals.bloodPressure}</p>
+              <p className="text-lg font-bold">{patient.vitals?.bloodPressure ?? "N/A"}</p>
             </div>
             <div className="text-center p-3 bg-green-50 rounded-lg">
               <p className="text-sm font-medium text-green-600">Heart Rate</p>
-              <p className="text-lg font-bold">{patient.vitals.heartRate} bpm</p>
+              <p className="text-lg font-bold">{patient.vitals?.heartRate ?? "N/A"} bpm</p>
             </div>
             <div className="text-center p-3 bg-orange-50 rounded-lg">
               <p className="text-sm font-medium text-orange-600">Temperature</p>
-              <p className="text-lg font-bold">{patient.vitals.temperature}°F</p>
+              <p className="text-lg font-bold">{patient.vitals?.temperature ?? "N/A"}°F</p>
             </div>
             <div className="text-center p-3 bg-purple-50 rounded-lg">
               <p className="text-sm font-medium text-purple-600">O2 Saturation</p>
-              <p className="text-lg font-bold">{patient.vitals.oxygenSaturation}%</p>
+              <p className="text-lg font-bold">{patient.vitals?.oxygenSaturation ?? "N/A"}%</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {patient.history.length > 0 && (
+      {patient.history?.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Medical History</CardTitle>
@@ -568,9 +734,32 @@ function PatientDetailsModal({ patient, role }: { patient: Patient; role: string
           <CardContent>
             <ul className="space-y-2">
               {patient.history.map((item, index) => (
-                <li key={index} className="flex items-start">
+                <li key={index} className="flex items-start gap-2">
                   <span className="text-gray-400 mr-2">•</span>
-                  <span>{item}</span>
+                  {role === "doctor" && editingHistoryIndex === index ? (
+                    <>
+                      <Input
+                        value={editingHistoryValue}
+                        onChange={e => setEditingHistoryValue(e.target.value)}
+                        className="w-auto flex-1"
+                        autoFocus
+                      />
+                      <Button size="sm" onClick={() => handleEditHistory(index, editingHistoryValue)} disabled={!editingHistoryValue.trim()}>
+                        Save
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => { setEditingHistoryIndex(null); setEditingHistoryValue("") }}>Cancel</Button>
+                    </>
+                  ) : (
+                    <>
+                      <span>{item}</span>
+                      {role === "doctor" && (
+                        <>
+                          <Button size="sm" variant="ghost" onClick={() => { setEditingHistoryIndex(index); setEditingHistoryValue(item) }}>Edit</Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteHistory(index)}>Delete</Button>
+                        </>
+                      )}
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
@@ -591,6 +780,24 @@ function PatientDetailsModal({ patient, role }: { patient: Patient; role: string
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {patient.history?.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Doctor Notes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {patient.history.map((item, index) => (
+                <li key={index} className="flex items-start">
+                  <span className="text-gray-400 mr-2">•</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
           </CardContent>
         </Card>
       )}

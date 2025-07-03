@@ -29,7 +29,7 @@ interface User extends FirebaseUser {
 
 interface AuthContextType {
   user: User | null
-  login: (email: string, password: string, role: string) => Promise<void>
+  login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   loading: boolean
 }
@@ -65,22 +65,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsub
   }, [])
 
-  const login = async (email: string, password: string, role: string) => {
+  const login = async (email: string, password: string) => {
     // --- 1️⃣  PREVIEW MODE ----------------------------------------------
     if (!auth || !db) {
       // No Firebase credentials => treat as demo sign-in
+      const match = DEMO_USERS.find((u) => u.email === email)
       setUser({
         uid: email, // just reuse email as fake UID
         email,
-        role,
+        role: match?.role,
         displayName: email.split("@")[0],
       } as User)
       return
     }
 
     // --- 2️⃣  REAL FIREBASE ---------------------------------------------
+    if (!auth || !db) return;
     try {
       const result = await signInWithEmailAndPassword(auth, email, password)
+<<<<<<< HEAD
 
       // Fetch user data from Firestore
       const snap = await getDoc(doc(db, "users", result.user.uid))
@@ -92,11 +95,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Persist / update role on Firestore
+=======
+      // Fetch user role from Firestore
+      const snap = await getDoc(doc(db, "users", result.user.uid))
+      const data = snap.data()
+      setUser({ ...result.user, role: data?.role, name: data?.name })
+      // Optionally update lastLogin, but do not set role
+>>>>>>> 4d7b7fcdcea0bb91604c14657eed62b2ad6ba370
       await setDoc(
         doc(db, "users", result.user.uid),
         {
           email: result.user.email,
-          role,
           name: result.user.displayName ?? email.split("@")[0],
           lastLogin: new Date(),
         },
@@ -106,12 +115,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // If we're using demo credentials in a real Firebase project that
       // does not contain those users – silently fall back.
       if (error.code === "auth/invalid-credential") {
-        const match = DEMO_USERS.find((u) => u.email === email && u.role === role)
+        const match = DEMO_USERS.find((u) => u.email === email)
         if (match) {
           setUser({
             uid: email,
             email,
-            role,
+            role: match.role,
             displayName: email.split("@")[0],
           } as User)
           return

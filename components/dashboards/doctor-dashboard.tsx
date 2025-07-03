@@ -8,13 +8,15 @@ import { Users, Calendar, FileText, Clock, AlertCircle, Plus } from "lucide-reac
 import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Patient, Appointment, Prescription } from "@/lib/types"
+import { useAuth } from "@/components/providers/auth-provider"
 
 export default function DoctorDashboard() {
+  const { user } = useAuth();
   const [myPatients, setMyPatients] = useState<Patient[]>([])
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([])
   const [pendingPrescriptions, setPendingPrescriptions] = useState<Prescription[]>([])
   const [criticalPatients, setCriticalPatients] = useState<Patient[]>([])
-  const doctorName = "Dr. Sarah Johnson" // TODO: Replace with logged-in user's name
+  const doctorName = user?.displayName || user?.name || "Dr. Sarah Johnson";
 
   useEffect(() => {
     if (!db) return
@@ -42,7 +44,7 @@ export default function DoctorDashboard() {
         prescriptions.filter((p) => p.doctorName === doctorName && p.status === "pending")
       )
     })
-  }, [])
+  }, [doctorName])
 
   return (
     <div className="space-y-6">
@@ -202,7 +204,7 @@ export default function DoctorDashboard() {
                   >
                     {patient.status}
                   </Badge>
-                  <p className="text-sm text-gray-500 mt-1">BP: {patient.vitals.bloodPressure}</p>
+                  <p className="text-sm text-gray-500 mt-1">BP: {patient.vitals?.bloodPressure ?? "N/A"}</p>
                 </div>
               </div>
             ))}

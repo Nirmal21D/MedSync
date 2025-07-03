@@ -43,6 +43,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           ...baseItems,
           { name: "Staff Management", href: `/dashboard/${userRole}/staff`, icon: Users },
           { name: "Inventory", href: `/dashboard/${userRole}/inventory`, icon: Package },
+          { name: "Bed Management", href: `/dashboard/${userRole}/bed-management`, icon: Bed },
           { name: "Analytics", href: `/dashboard/${userRole}/analytics`, icon: BarChart3 },
           { name: "Settings", href: `/dashboard/${userRole}/settings`, icon: Settings },
         ]
