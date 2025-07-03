@@ -176,179 +176,87 @@ export default function InventoryPage({ params }: { params: Promise<{ role: stri
 
   return (
     <DashboardLayout role={role}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {role === "pharmacist" ? "Medicine Inventory" : "Inventory Management"}
-            </h1>
-            <p className="text-gray-600">
-              {role === "pharmacist" ? "Manage medicine stock levels" : "Track and manage hospital inventory"}
-            </p>
+      <div className="relative space-y-6 theme-bg min-h-screen p-4 overflow-hidden">
+        {/* Animated color blobs */}
+        <div className="absolute -z-10 left-1/2 top-1/4 w-[32vw] h-[32vw] bg-emerald-200 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-60%,-40%)'}} />
+        <div className="absolute -z-10 right-1/4 bottom-0 w-[28vw] h-[28vw] bg-violet-200 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(40%,40%)'}} />
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {role === "pharmacist" ? "Medicine Inventory" : "Inventory Management"}
+              </h1>
+              <p className="text-gray-600">
+                {role === "pharmacist" ? "Manage medicine stock levels" : "Track and manage hospital inventory"}
+              </p>
+            </div>
+            <Dialog open={showAddItem} onOpenChange={setShowAddItem}>
+              <DialogTrigger asChild>
+                <Button type="button">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Item
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Add New Inventory Item</DialogTitle>
+                  <DialogDescription>Enter details for the new inventory item</DialogDescription>
+                </DialogHeader>
+                <AddItemForm onSubmit={handleAddItem} onCancel={() => setShowAddItem(false)} role={role} />
+              </DialogContent>
+            </Dialog>
           </div>
-          <Dialog open={showAddItem} onOpenChange={setShowAddItem}>
-            <DialogTrigger asChild>
-              <Button type="button">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Item
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Add New Inventory Item</DialogTitle>
-                <DialogDescription>Enter details for the new inventory item</DialogDescription>
-              </DialogHeader>
-              <AddItemForm onSubmit={handleAddItem} onCancel={() => setShowAddItem(false)} role={role} />
-            </DialogContent>
-          </Dialog>
-        </div>
 
-        {/* Filters */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search inventory by name or location..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+          {/* Filters */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search inventory by name or location..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
-              </div>
-              {role !== "pharmacist" && (
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                {role !== "pharmacist" && (
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger className="w-full md:w-48">
+                      <SelectValue placeholder="Filter by category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="equipment">Equipment</SelectItem>
+                      <SelectItem value="supplies">Supplies</SelectItem>
+                      <SelectItem value="medicine">Medicine</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="Filter by category" />
+                    <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="equipment">Equipment</SelectItem>
-                    <SelectItem value="supplies">Supplies</SelectItem>
-                    <SelectItem value="medicine">Medicine</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="low-stock">Low Stock</SelectItem>
+                    <SelectItem value="out-of-stock">Out of Stock</SelectItem>
                   </SelectContent>
                 </Select>
-              )}
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="low-stock">Low Stock</SelectItem>
-                  <SelectItem value="out-of-stock">Out of Stock</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Inventory Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Package className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Items</p>
-                  <p className="text-2xl font-bold">{filteredInventory.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Available</p>
-                  <p className="text-2xl font-bold">
-                    {filteredInventory.filter((i) => i.status === "available").length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <AlertTriangle className="h-6 w-6 text-orange-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Low Stock</p>
-                  <p className="text-2xl font-bold">
-                    {filteredInventory.filter((i) => i.status === "low-stock").length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Out of Stock</p>
-                  <p className="text-2xl font-bold">
-                    {filteredInventory.filter((i) => i.status === "out-of-stock").length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Inventory List */}
-        <div className="grid gap-4">
-          {filteredInventory.map((item) => (
-            <Card key={item.id} className="hover:shadow-md transition-shadow">
+          {/* Inventory Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold">{item.name}</h3>
-                      <Badge variant={getStatusColor(item.status)}>{item.status.replace("-", " ")}</Badge>
-                      <Badge variant="outline" className="capitalize">
-                        {item.category}
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-600">Quantity</p>
-                        <p className="text-lg font-bold">
-                          {item.quantity} {item.unit}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-600">Location</p>
-                        <p className="text-sm text-gray-900">{item.location}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-600">Min Threshold</p>
-                        <p className="text-sm text-gray-900">
-                          {item.minThreshold} {item.unit}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-600">Last Updated</p>
-                        <p className="text-sm text-gray-900">
-                          {item.lastUpdated instanceof Date
-                            ? item.lastUpdated.toLocaleDateString()
-                            : new Date(item.lastUpdated).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
+                <div className="flex items-center">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Package className="h-6 w-6 text-orange-600" />
                   </div>
 
                   <div className="flex flex-col gap-2 ml-4">
@@ -369,7 +277,130 @@ export default function InventoryPage({ params }: { params: Promise<{ role: stri
                 </div>
               </CardContent>
             </Card>
-          ))}
+            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Available</p>
+                    <p className="text-2xl font-bold">
+                      {filteredInventory.filter((i) => i.status === "available").length}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <AlertTriangle className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Low Stock</p>
+                    <p className="text-2xl font-bold">
+                      {filteredInventory.filter((i) => i.status === "low-stock").length}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Out of Stock</p>
+                    <p className="text-2xl font-bold">
+                      {filteredInventory.filter((i) => i.status === "out-of-stock").length}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Inventory List - Inventory-like grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8">
+            {filteredInventory.map((item) => {
+              // Category icon
+              const categoryIcon = item.category === 'medicine' ? <Package className="h-5 w-5 text-violet-500" />
+                : item.category === 'equipment' ? <AlertTriangle className="h-5 w-5 text-orange-500" />
+                : <CheckCircle className="h-5 w-5 text-green-500" />
+              // Status color
+              const statusColor = item.status === 'available' ? 'bg-green-100 text-green-700'
+                : item.status === 'low-stock' ? 'bg-orange-100 text-orange-700'
+                : 'bg-red-100 text-red-700'
+              return (
+                <div key={item.id} className="relative group rounded-xl border border-gray-200 bg-slate-50 shadow-lg shadow-emerald-100/40 hover:scale-[1.03] transition-transform p-4 flex flex-col min-h-[180px]">
+                  {/* Accent bar */}
+                  <div className="absolute top-0 left-0 w-full h-2 rounded-t-xl bg-violet-500" />
+                  {/* Category icon */}
+                  <div className="absolute top-3 left-3">{categoryIcon}</div>
+                  {/* Actions (hover overlay) */}
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-10">
+                    <Button variant="outline" size="icon" className="p-1 h-7 w-7" onClick={() => setEditingItem(item)}>
+                      <Edit className="h-4 w-4 text-violet-500" />
+                    </Button>
+                    {role === "admin" && (
+                      <Button variant="outline" size="icon" className="p-1 h-7 w-7" onClick={() => handleDeleteItem(item.id)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    )}
+                  </div>
+                  {/* Main content */}
+                  <div className="flex-1 flex flex-col items-center justify-center text-center">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="break-words text-base font-semibold leading-tight text-center">{item.name}</h3>
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${statusColor}`}>{item.quantity} {item.unit}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="outline" className="capitalize">{item.category}</Badge>
+                      <span className="text-xs text-gray-500">{item.location}</span>
+                    </div>
+                  </div>
+                  {/* Status at bottom */}
+                  <div className="flex justify-center mt-2">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${statusColor}`}>{item.status.replace("-", " ")}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {filteredInventory.length === 0 && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-8">
+                  <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No inventory items found</h3>
+                  <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Edit Item Dialog */}
+          {editingItem && (
+            <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Edit Inventory Item</DialogTitle>
+                  <DialogDescription>Update item details and stock levels</DialogDescription>
+                </DialogHeader>
+                <EditItemForm
+                  item={editingItem}
+                  onSubmit={handleUpdateItem}
+                  onCancel={() => setEditingItem(null)}
+                  role={role}
+                />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         {filteredInventory.length === 0 && (

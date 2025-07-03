@@ -118,97 +118,125 @@ export default function UserManagement() {
         <h2 className="text-xl font-bold">User Management</h2>
         <Button onClick={handleOpen}>Add User</Button>
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Department</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map(user => (
-            <TableRow key={user.id}>
-              <TableCell>{user.name}</TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>{user.role}</TableCell>
-              <TableCell>{user.department}</TableCell>
-              <TableCell>{user.status}</TableCell>
+      <div className="glass-card bg-white/70 backdrop-blur-xl shadow-lg p-4">
+        <Table className="rounded-2xl overflow-hidden">
+          <TableHeader className="bg-emerald-50/60">
+            <TableRow>
+              <TableHead className="font-semibold text-gray-700">Name</TableHead>
+              <TableHead className="font-semibold text-gray-700">Email</TableHead>
+              <TableHead className="font-semibold text-gray-700">Role</TableHead>
+              <TableHead className="font-semibold text-gray-700">Department</TableHead>
+              <TableHead className="font-semibold text-gray-700">Status</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {users.map((user, idx) => (
+              <TableRow
+                key={user.id}
+                className={
+                  `transition hover:bg-emerald-50/40 ${idx % 2 === 0 ? 'bg-white/60' : 'bg-emerald-50/20'}`
+                }
+              >
+                <TableCell className="font-medium text-gray-900">{user.name}</TableCell>
+                <TableCell className="text-gray-700">{user.email}</TableCell>
+                <TableCell>
+                  <span className={
+                    `inline-block px-2 py-1 rounded-full text-xs font-semibold ` +
+                    (user.role === 'admin' ? 'bg-red-100 text-red-700' :
+                    user.role === 'doctor' ? 'bg-violet-100 text-violet-700' :
+                    user.role === 'nurse' ? 'bg-purple-100 text-purple-700' :
+                    user.role === 'pharmacist' ? 'bg-orange-100 text-orange-700' :
+                    user.role === 'receptionist' ? 'bg-gray-100 text-gray-700' :
+                    'bg-gray-100 text-gray-700')
+                  }>
+                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                  </span>
+                </TableCell>
+                <TableCell className="text-gray-700">{user.department}</TableCell>
+                <TableCell>
+                  <span className={
+                    `inline-block px-2 py-1 rounded-full text-xs font-semibold ` +
+                    (user.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600')
+                  }>
+                    {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New User</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label>Name</Label>
-              <Input value={form.name} onChange={e => handleChange("name", e.target.value)} required />
-            </div>
-            <div>
-              <Label>Email</Label>
-              <Input type="email" value={form.email} onChange={e => handleChange("email", e.target.value)} required />
-            </div>
-            <div>
-              <Label>Role</Label>
-              <Select value={form.role} onValueChange={val => handleChange("role", val)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLES.map(role => (
-                    <SelectItem key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Department (optional)</Label>
-              <Input value={form.department} onChange={e => handleChange("department", e.target.value)} />
-            </div>
-            <div>
-              <Label>Specialization (optional)</Label>
-              <Input value={form.specialization} onChange={e => handleChange("specialization", e.target.value)} />
-            </div>
-            <div>
-              <Label>Phone (optional)</Label>
-              <Input value={form.phone} onChange={e => handleChange("phone", e.target.value)} />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Input
-                type={showPassword ? "text" : "password"}
-                value={form.password}
-                onChange={e => handleChange("password", e.target.value)}
-                placeholder="Set password or leave blank to auto-generate"
-                disabled={form.autoGenerate}
-              />
-              <Label className="flex items-center space-x-1 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showPassword}
-                  onChange={e => setShowPassword(e.target.checked)}
+          <div className="bg-white !bg-white rounded-2xl p-6 shadow-md">
+            <DialogHeader>
+              <DialogTitle>Add New User</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+              <div>
+                <Label>Name</Label>
+                <Input value={form.name} onChange={e => handleChange("name", e.target.value)} required />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input type="email" value={form.email} onChange={e => handleChange("email", e.target.value)} required />
+              </div>
+              <div>
+                <Label>Role</Label>
+                <Select value={form.role} onValueChange={val => handleChange("role", val)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLES.map(role => (
+                      <SelectItem key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Department (optional)</Label>
+                <Input value={form.department} onChange={e => handleChange("department", e.target.value)} />
+              </div>
+              <div>
+                <Label>Specialization (optional)</Label>
+                <Input value={form.specialization} onChange={e => handleChange("specialization", e.target.value)} />
+              </div>
+              <div>
+                <Label>Phone (optional)</Label>
+                <Input value={form.phone} onChange={e => handleChange("phone", e.target.value)} />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={e => handleChange("password", e.target.value)}
+                  placeholder="Set password or leave blank to auto-generate"
+                  disabled={form.autoGenerate}
                 />
-                <span>Show</span>
-              </Label>
-              <Label className="flex items-center space-x-1">
-                <input
-                  type="checkbox"
-                  checked={form.autoGenerate}
-                  onChange={e => handleChange("autoGenerate", e.target.checked)}
-                />
-                <span>Auto-generate</span>
-              </Label>
-            </div>
-            {error && <div className="text-red-600 text-sm">{error}</div>}
-            <DialogFooter>
-              <Button type="submit" disabled={loading}>{loading ? "Adding..." : "Add User"}</Button>
-            </DialogFooter>
-          </form>
+                <Label className="flex items-center space-x-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showPassword}
+                    onChange={e => setShowPassword(e.target.checked)}
+                  />
+                  <span>Show</span>
+                </Label>
+                <Label className="flex items-center space-x-1">
+                  <input
+                    type="checkbox"
+                    checked={form.autoGenerate}
+                    onChange={e => handleChange("autoGenerate", e.target.checked)}
+                  />
+                  <span>Auto-generate</span>
+                </Label>
+              </div>
+              {error && <div className="text-red-600 text-sm">{error}</div>}
+              <DialogFooter>
+                <Button type="submit" disabled={loading}>{loading ? "Adding..." : "Add User"}</Button>
+              </DialogFooter>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
       {success && (

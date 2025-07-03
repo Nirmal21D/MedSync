@@ -4,6 +4,31 @@
 
 body {
   font-family: Arial, Helvetica, sans-serif;
+  /* Unified theme background for all pages */
+  background: linear-gradient(120deg, #f8fafc 0%, #f1f5f9 100%);
+  background-size: 300% 300%;
+  animation: bgMove 18s ease-in-out infinite;
+  position: relative;
+  transition: background 0.5s, color 0.5s;
+}
+body.dark {
+  background: linear-gradient(120deg, #18181b 0%, #23272f 100%);
+  color: #f3f4f6;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 60% 20%, #a5b4fc55 0%, transparent 70%),
+              radial-gradient(ellipse at 20% 80%, #fbcfe855 0%, transparent 70%);
+}
+
+@keyframes bgMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 @layer utilities {
@@ -47,6 +72,7 @@ body {
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --glass-glow: 0 4px 32px 0 rgba(16, 185, 129, 0.18); /* emerald default */
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -91,4 +117,38 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Utility for theme background if needed elsewhere */
+.theme-bg {
+  background: linear-gradient(120deg, #f8fafc 0%, #f1f5f9 100%);
+  background-size: 300% 300%;
+  animation: bgMove 18s ease-in-out infinite;
+  transition: background 0.5s;
+}
+.dark .theme-bg {
+  background: linear-gradient(120deg, #18181b 0%, #23272f 100%);
+}
+
+/* Enhanced Glassmorphism utility for cards */
+.glass-card {
+  @apply bg-white/10 backdrop-blur-2xl border border-white/30 transition-all duration-300;
+  box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.10);
+  border-radius: 1.5rem;
+  background-clip: padding-box;
+  position: relative;
+  overflow: hidden;
+}
+.glass-card-emerald { --glass-glow: 0 4px 32px 0 rgba(16, 185, 129, 0.18); }
+.glass-card-violet { --glass-glow: 0 4px 32px 0 rgba(139, 92, 246, 0.18); }
+.glass-card-blue { --glass-glow: 0 4px 32px 0 rgba(59, 130, 246, 0.18); }
+
+.glass-card::after {
+  display: none;
+}
+.glass-card:hover {
+  filter: brightness(1.08) saturate(1.12) blur(1.5px);
+  border-color: rgba(255,255,255,0.5);
+  background: linear-gradient(120deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%);
+  transition: all 0.35s cubic-bezier(.4,2,.6,1);
 }

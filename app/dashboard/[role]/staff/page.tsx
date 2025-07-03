@@ -191,240 +191,251 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
 
   return (
     <DashboardLayout role={role}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
-            <p className="text-gray-600">Manage hospital staff members and their roles</p>
-          </div>
-          <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Staff Member
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Add New Staff Member</DialogTitle>
-                <DialogDescription>Enter details for the new staff member</DialogDescription>
-              </DialogHeader>
-              <AddStaffForm onSubmit={handleAddStaff} onCancel={() => setShowAddStaff(false)} />
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Filters */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search staff by name, email, or department..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="doctor">Doctor</SelectItem>
-                  <SelectItem value="nurse">Nurse</SelectItem>
-                  <SelectItem value="pharmacist">Pharmacist</SelectItem>
-                  <SelectItem value="receptionist">Receptionist</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+      <div className="relative space-y-6 theme-bg min-h-screen p-4 overflow-hidden">
+        {/* Animated color blobs */}
+        <div className="absolute -z-10 left-1/2 top-1/4 w-[32vw] h-[32vw] bg-emerald-200 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-60%,-40%)'}} />
+        <div className="absolute -z-10 right-1/4 bottom-0 w-[28vw] h-[28vw] bg-violet-200 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(40%,40%)'}} />
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
+              <p className="text-gray-600">Manage hospital staff members and their roles</p>
             </div>
-          </CardContent>
-        </Card>
+            <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Staff Member
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Add New Staff Member</DialogTitle>
+                  <DialogDescription>Enter details for the new staff member</DialogDescription>
+                </DialogHeader>
+                <AddStaffForm onSubmit={handleAddStaff} onCancel={() => setShowAddStaff(false)} />
+              </DialogContent>
+            </Dialog>
+          </div>
 
-        {/* Staff Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card>
+          {/* Filters */}
+          <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
             <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Users className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Staff</p>
-                  <p className="text-2xl font-bold">{filteredStaff.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <UserCheck className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Doctors</p>
-                  <p className="text-2xl font-bold">{filteredStaff.filter((s) => s.role === "doctor").length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <UserCheck className="h-6 w-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Nurses</p>
-                  <p className="text-2xl font-bold">{filteredStaff.filter((s) => s.role === "nurse").length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <UserCheck className="h-6 w-6 text-orange-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active</p>
-                  <p className="text-2xl font-bold">{filteredStaff.filter((s) => s.status === "active").length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <UserX className="h-6 w-6 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Inactive</p>
-                  <p className="text-2xl font-bold">{filteredStaff.filter((s) => s.status === "inactive").length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Staff List */}
-        <div className="grid gap-4">
-          {filteredStaff.map((staffMember) => (
-            <Card key={staffMember.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold">{staffMember.name}</h3>
-                      <Badge variant={staffMember.status === "active" ? "default" : "secondary"}>
-                        {staffMember.status}
-                      </Badge>
-                      <Badge variant="outline" className="capitalize">
-                        {staffMember.role}
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Mail className="mr-2 h-4 w-4" />
-                        {staffMember.email}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Phone className="mr-2 h-4 w-4" />
-                        {staffMember.phone}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Users className="mr-2 h-4 w-4" />
-                        {staffMember.department}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Calendar className="mr-2 h-4 w-4" />
-                        Joined: {staffMember.joinDate instanceof Date
-                          ? staffMember.joinDate.toLocaleDateString()
-                          : new Date(staffMember.joinDate).toLocaleDateString()}
-                      </div>
-                    </div>
-
-                    {staffMember.specialization && (
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-600">
-                          <strong>Specialization:</strong> {staffMember.specialization}
-                        </p>
-                      </div>
-                    )}
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search staff by name, email, or department..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
                   </div>
+                </div>
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Filter by role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="doctor">Doctor</SelectItem>
+                    <SelectItem value="nurse">Nurse</SelectItem>
+                    <SelectItem value="pharmacist">Pharmacist</SelectItem>
+                    <SelectItem value="receptionist">Receptionist</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
 
-                  <div className="flex flex-col gap-2 ml-4">
-                    <Button variant="outline" size="sm" onClick={() => setEditingStaff(staffMember)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleStatusToggle(staffMember.id)}>
-                      {staffMember.status === "active" ? (
-                        <>
-                          <UserX className="mr-2 h-4 w-4" />
-                          Deactivate
-                        </>
-                      ) : (
-                        <>
-                          <UserCheck className="mr-2 h-4 w-4" />
-                          Activate
-                        </>
-                      )}
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDeleteStaff(staffMember.id)}>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </Button>
+          {/* Staff Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Users className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Total Staff</p>
+                    <p className="text-2xl font-bold">{filteredStaff.length}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-violet-100 rounded-lg">
+                    <UserCheck className="h-6 w-6 text-violet-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Doctors</p>
+                    <p className="text-2xl font-bold">{filteredStaff.filter((s) => s.role === "doctor").length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <UserCheck className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Nurses</p>
+                    <p className="text-2xl font-bold">{filteredStaff.filter((s) => s.role === "nurse").length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <UserCheck className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Active</p>
+                    <p className="text-2xl font-bold">{filteredStaff.filter((s) => s.status === "active").length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <UserX className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Inactive</p>
+                    <p className="text-2xl font-bold">{filteredStaff.filter((s) => s.status === "inactive").length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Staff List */}
+          <div className="grid gap-4">
+            {filteredStaff.map((staffMember) => {
+              // Map role to avatar image
+              const avatarMap: Record<string, string> = {
+                admin: "/admin.png",
+                doctor: "/doctor.png",
+                nurse: "/nurse.png",
+                pharmacist: "/phramacist.png",
+                receptionist: "/receptionist.png",
+              }
+              const avatar = avatarMap[staffMember.role] || "/placeholder-user.jpg"
+              // Helper for role badge color
+              const roleBadgeClass =
+                staffMember.role === 'admin' ? 'bg-red-100 text-red-700' :
+                staffMember.role === 'doctor' ? 'bg-violet-100 text-violet-700' :
+                staffMember.role === 'nurse' ? 'bg-purple-100 text-purple-700' :
+                staffMember.role === 'pharmacist' ? 'bg-orange-100 text-orange-700' :
+                staffMember.role === 'receptionist' ? 'bg-gray-100 text-gray-700' :
+                'bg-gray-100 text-gray-700'
+              // Helper for badge color
+              const statusBadgeClass = staffMember.status === 'active'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-gray-200 text-gray-600'
+              return (
+                <Card key={staffMember.id} className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+                  <CardContent className="py-6 px-4">
+                    <div className="flex items-center gap-6">
+                      {/* Avatar */}
+                      <div className="flex-shrink-0">
+                        <img src={avatar} alt={staffMember.role} className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md" />
+                      </div>
+                      {/* Main info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold truncate">{staffMember.name}</h3>
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold capitalize ${statusBadgeClass}`}>{staffMember.status}</span>
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold capitalize ${roleBadgeClass}`}>{staffMember.role}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-6 text-sm text-gray-600">
+                          <span className="flex items-center gap-1"><Mail className="h-4 w-4" />{staffMember.email}</span>
+                          <span className="flex items-center gap-1"><Phone className="h-4 w-4" />{staffMember.phone}</span>
+                          <span className="flex items-center gap-1"><Users className="h-4 w-4" />{staffMember.department}</span>
+                          <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />Joined: {staffMember.joinDate instanceof Date ? staffMember.joinDate.toLocaleDateString() : new Date(staffMember.joinDate).toLocaleDateString()}</span>
+                        </div>
+                        {staffMember.specialization && (
+                          <div className="mt-2">
+                            <p className="text-sm text-gray-600">
+                              <strong>Specialization:</strong> {staffMember.specialization}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      {/* Actions */}
+                      <div className="flex flex-col gap-2 ml-4">
+                        <Button variant="outline" size="sm" onClick={() => setEditingStaff(staffMember)} className="border-violet-200 text-violet-700 hover:bg-violet-50">
+                          <Edit className="mr-2 h-4 w-4 text-violet-500" />
+                          Edit
+                        </Button>
+                        {staffMember.status === "active" ? (
+                          <Button variant="outline" size="sm" onClick={() => handleStatusToggle(staffMember.id)} className="border-gray-200 text-gray-700 hover:bg-gray-50">
+                            <UserX className="mr-2 h-4 w-4 text-gray-400" />
+                            Deactivate
+                          </Button>
+                        ) : (
+                          <Button variant="outline" size="sm" onClick={() => handleStatusToggle(staffMember.id)} className="border-orange-200 text-orange-700 hover:bg-orange-50">
+                            <UserCheck className="mr-2 h-4 w-4 text-orange-500" />
+                            Activate
+                          </Button>
+                        )}
+                        <Button variant="outline" size="sm" onClick={() => handleDeleteStaff(staffMember.id)} className="border-red-200 text-red-700 hover:bg-red-50">
+                          <Trash2 className="mr-2 h-4 w-4 text-red-500" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+
+          {filteredStaff.length === 0 && (
+            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+              <CardContent className="pt-6">
+                <div className="text-center py-8">
+                  <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No staff members found</h3>
+                  <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Edit Staff Dialog */}
+          {editingStaff && (
+            <Dialog open={!!editingStaff} onOpenChange={() => setEditingStaff(null)}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Edit Staff Member</DialogTitle>
+                  <DialogDescription>Update staff member details</DialogDescription>
+                </DialogHeader>
+                <EditStaffForm staff={editingStaff} onSubmit={handleUpdateStaff} onCancel={() => setEditingStaff(null)} />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
-
-        {filteredStaff.length === 0 && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-8">
-                <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No staff members found</h3>
-                <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Edit Staff Dialog */}
-        {editingStaff && (
-          <Dialog open={!!editingStaff} onOpenChange={() => setEditingStaff(null)}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Edit Staff Member</DialogTitle>
-                <DialogDescription>Update staff member details</DialogDescription>
-              </DialogHeader>
-              <EditStaffForm staff={editingStaff} onSubmit={handleUpdateStaff} onCancel={() => setEditingStaff(null)} />
-            </DialogContent>
-          </Dialog>
-        )}
       </div>
     </DashboardLayout>
   )

@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { motion, useMotionValue, useSpring } from "framer-motion"
 
 import { cn } from "@/lib/utils"
 
@@ -42,6 +43,54 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+    // Magnetic effect logic
+    const isMagnetic = (props as any)["data-magnetic"] !== undefined
+    const x = useMotionValue(0)
+    const y = useMotionValue(0)
+    const springX = useSpring(x, { stiffness: 400, damping: 30 })
+    const springY = useSpring(y, { stiffness: 400, damping: 30 })
+    React.useEffect(() => {
+      if (!isMagnetic) return
+      const handleMove = (e: MouseEvent) => {
+        const btn = ref && typeof ref !== 'function' && ref.current ? ref.current : null
+        if (!btn) return
+        const rect = (btn as HTMLElement).getBoundingClientRect()
+        const mx = e.clientX - rect.left - rect.width / 2
+        const my = e.clientY - rect.top - rect.height / 2
+        const dist = Math.sqrt(mx * mx + my * my)
+        if (dist < 120) {
+          x.set(mx * 0.2)
+          y.set(my * 0.2)
+        } else {
+          x.set(0)
+          y.set(0)
+        }
+      }
+      const handleLeave = () => {
+        x.set(0)
+        y.set(0)
+      }
+      window.addEventListener("mousemove", handleMove)
+      if (ref && typeof ref !== 'function' && ref.current) {
+        (ref.current as HTMLElement).addEventListener("mouseleave", handleLeave)
+      }
+      return () => {
+        window.removeEventListener("mousemove", handleMove)
+        if (ref && typeof ref !== 'function' && ref.current) {
+          (ref.current as HTMLElement).removeEventListener("mouseleave", handleLeave)
+        }
+      }
+    }, [isMagnetic, ref, x, y])
+    if (isMagnetic) {
+      return (
+        <motion.button
+          ref={ref}
+          style={{ x: springX, y: springY }}
+          className={cn(buttonVariants({ variant, size, className }))}
+          {...props}
+        />
+      )
+    }
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}

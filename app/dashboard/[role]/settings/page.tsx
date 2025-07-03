@@ -24,10 +24,10 @@ import { createUserWithEmailAndPassword } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { collection, getDocs } from "firebase/firestore"
 
-export default function SettingsPage({ params }: { params: Promise<{ role: string }> }) {
+export default function SettingsPage({ params }: { params: { role: string } }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = React.use(params)
+  const { role } = params
   const { toast } = useToast()
   const [settings, setSettings] = useState<SystemSettings | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -350,17 +350,21 @@ export default function SettingsPage({ params }: { params: Promise<{ role: strin
 
   return (
     <DashboardLayout role={role}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">System Settings</h1>
-            <p className="text-gray-600">Configure hospital system preferences and security</p>
+      <div className="relative space-y-6 theme-bg min-h-screen p-4 overflow-hidden">
+        {/* Animated color blobs */}
+        <div className="absolute -z-10 left-1/2 top-1/4 w-[32vw] h-[32vw] bg-emerald-200 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-60%,-40%)'}} />
+        <div className="absolute -z-10 right-1/4 bottom-0 w-[28vw] h-[28vw] bg-violet-200 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(40%,40%)'}} />
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">System Settings</h1>
+              <p className="text-gray-600">Configure hospital system preferences and security</p>
+            </div>
+            <Button onClick={handleSave} disabled={isSaving}>
+              <Save className="mr-2 h-4 w-4" />
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
           </div>
-          <Button onClick={handleSave} disabled={isSaving}>
-            <Save className="mr-2 h-4 w-4" />
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
 
         <Tabs defaultValue="hospital" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
@@ -494,7 +498,7 @@ export default function SettingsPage({ params }: { params: Promise<{ role: strin
           </TabsContent>
 
           <TabsContent value="security">
-            <Card>
+            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Shield className="mr-2 h-5 w-5" />
@@ -642,29 +646,6 @@ export default function SettingsPage({ params }: { params: Promise<{ role: strin
                           backup: { ...settings.backup, backupFrequency: value },
                         })
                       }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="retentionDays">Retention Period (days)</Label>
-                    <Input
-                      id="retentionDays"
-                      type="number"
-                      value={settings.backup.retentionDays}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          backup: { ...settings.backup, retentionDays: Number.parseInt(e.target.value) || 30 },
-                        })
-                      }
                     />
                   </div>
                 </div>
@@ -718,28 +699,6 @@ export default function SettingsPage({ params }: { params: Promise<{ role: strin
                     <Button variant="outline" onClick={handleExportPDF}>
                       Export Overview PDF
                     </Button>
-                  </div>
-                </div>
-
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-medium mb-4">Data Statistics</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <p className="text-2xl font-bold text-blue-600">1,247</p>
-                      <p className="text-sm text-gray-600">Total Records</p>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <p className="text-2xl font-bold text-green-600">98.5%</p>
-                      <p className="text-sm text-gray-600">Data Integrity</p>
-                    </div>
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <p className="text-2xl font-bold text-orange-600">2.3 GB</p>
-                      <p className="text-sm text-gray-600">Storage Used</p>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <p className="text-2xl font-bold text-purple-600">24h</p>
-                      <p className="text-sm text-gray-600">Last Backup</p>
-                    </div>
                   </div>
                 </div>
               </CardContent>
