@@ -51,7 +51,6 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
         return [
           ...baseItems,
           { name: "Patients", href: `/dashboard/${userRole}/patients`, icon: Users },
-          { name: "Appointments", href: `/dashboard/${userRole}/appointments`, icon: Calendar },
           { name: "Prescriptions", href: `/dashboard/${userRole}/prescriptions`, icon: FileText },
         ]
       case "nurse":
@@ -70,7 +69,6 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
         return [
           ...baseItems,
           { name: "Patients", href: `/dashboard/${userRole}/patients`, icon: Users },
-          { name: "Appointments", href: `/dashboard/${userRole}/appointments`, icon: Calendar },
           { name: "Bed Management", href: `/dashboard/${userRole}/beds`, icon: Bed },
         ]
       default:

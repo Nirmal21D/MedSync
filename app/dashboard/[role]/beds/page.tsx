@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Bed, Search, User, MapPin, Calendar, Settings, UserPlus, UserMinus, Wrench, ArrowRightLeft } from "lucide-react"
-import { collection, getDocs, setDoc, doc, updateDoc, deleteField } from "firebase/firestore"
+import { collection, getDocs, setDoc, doc, updateDoc, deleteField, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Bed as BedType, Patient } from "@/lib/types"
 
@@ -30,6 +30,10 @@ async function fetchBedsFromFirestore(): Promise<BedType[]> {
   const snapshot = await getDocs(collection(db, "beds"))
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BedType))
 }
+
+// --- Configurable Prices ---
+const BED_CHARGE = 1000; // You can make this stateful or fetch from settings
+const CONSULTATION_CHARGE = 500;
 
 export default function BedManagementPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
@@ -116,6 +120,24 @@ export default function BedManagementPage({ params }: { params: Promise<{ role: 
       patientName,
     })
     // Update patient document to reflect assigned bed
+    const patientRef = doc(db, "patients", patientId);
+    const patientSnap = await getDoc(patientRef);
+    if (patientSnap.exists()) {
+      const patientData = patientSnap.data();
+      const bills = Array.isArray(patientData.bills) ? patientData.bills : [];
+      // Prevent duplicate bed bills for the same bed/admission
+      const hasBedBill = bills.some(bill => bill.items.some(item => item.name === "Bed Charge" && item.bedId === bedId));
+      if (!hasBedBill) {
+        bills.push({
+          id: `bed-${bedId}-${Date.now()}`,
+          date: new Date().toISOString(),
+          items: [{ name: "Bed Charge", quantity: 1, price: BED_CHARGE, bedId }],
+          total: BED_CHARGE,
+          status: "unpaid"
+        });
+        await setDoc(patientRef, { bills }, { merge: true });
+      }
+    }
     await setDoc(doc(db, "patients", patientId), {
       ...patients.find((p) => p.id === patientId),
       assignedBed: bedId,

@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Search, Plus, Eye, FileText, Heart, Phone, MapPin, Calendar, Activity } from "lucide-react"
 import { collection, getDocs, setDoc, doc, updateDoc, deleteField } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import type { Patient } from "@/lib/types"
+import type { Patient, Staff } from "@/lib/types"
 
 export default function PatientsPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
@@ -43,6 +43,7 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
   const [notePatient, setNotePatient] = useState<Patient | null>(null)
   const [noteContent, setNoteContent] = useState("")
   const [deletingHistoryIndex, setDeletingHistoryIndex] = useState<number | null>(null)
+  const [doctors, setDoctors] = useState<Staff[]>([])
 
   useEffect(() => {
     if (!loading && !user) {
@@ -51,6 +52,9 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
     if (db) {
       getDocs(collection(db, "patients")).then(snapshot => {
         setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)))
+      })
+      getDocs(collection(db, "users")).then(snapshot => {
+        setDoctors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff)).filter(u => u.role === "doctor"))
       })
     }
   }, [user, loading, router])
@@ -71,7 +75,7 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
 
     // Role-based filtering
     if (role === "doctor") {
-      const doctorName = user?.displayName || user?.name || "Dr. Sarah Johnson";
+      const doctorName = user?.displayName || user?.name ;
       filtered = patients.filter((p) => p.assignedDoctor === doctorName)
     } else if (role === "nurse") {
       filtered = patients // In real app, filter by assigned nurse
@@ -120,6 +124,13 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
       admissionDate: new Date(),
       status: "admitted",
       nursingNotes: [],
+      bills: [{
+        id: `consult-${Date.now()}`,
+        date: new Date().toISOString(),
+        items: [{ name: "Doctor Consultation", quantity: 1, price: 500 }],
+        total: 500,
+        status: "unpaid"
+      }],
     }
     await setDoc(doc(db, "patients", patient.id), patient)
     setPatients([...patients, patient])
@@ -181,7 +192,7 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
                   <DialogTitle>Add New Patient</DialogTitle>
                   <DialogDescription>Enter patient information for registration</DialogDescription>
                 </DialogHeader>
-                <AddPatientForm onSubmit={handleAddPatient} onCancel={() => setShowAddPatient(false)} />
+                <AddPatientForm onSubmit={handleAddPatient} onCancel={() => setShowAddPatient(false)} doctors={doctors} />
               </DialogContent>
             </Dialog>
           )}
@@ -405,6 +416,7 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
                 onSubmit={(data) => handleEditPatient({ ...editPatientData, ...data })}
                 onCancel={() => setShowEditPatient(false)}
                 initialData={editPatientData}
+                doctors={doctors}
               />
             </DialogContent>
           </Dialog>
@@ -448,7 +460,9 @@ function AddPatientForm({
   onSubmit,
   onCancel,
   initialData,
-}: { onSubmit: (patient: Partial<Patient>) => void; onCancel: () => void; initialData?: Patient }) {
+  doctors = [],
+}: { onSubmit: (patient: Partial<Patient>) => void; onCancel: () => void; initialData?: Patient; doctors?: Staff[] }) {
+  const { user } = useAuth()
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     age: initialData?.age?.toString() || "",
@@ -535,11 +549,20 @@ function AddPatientForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="assignedDoctor">Assigned Doctor</Label>
-          <Input
-            id="assignedDoctor"
-            value={formData.assignedDoctor}
-            onChange={(e) => setFormData({ ...formData, assignedDoctor: e.target.value })}
-          />
+          <Select value={formData.assignedDoctor} onValueChange={value => setFormData({ ...formData, assignedDoctor: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select doctor" />
+            </SelectTrigger>
+            <SelectContent>
+              {doctors && doctors.length > 0 ? (
+                doctors.map(doc => (
+                  <SelectItem key={doc.id} value={doc.name}>{doc.name} ({doc.specialization || "Doctor"})</SelectItem>
+                ))
+              ) : (
+                <SelectItem value="" disabled>No doctors available</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div className="space-y-2">
@@ -550,57 +573,58 @@ function AddPatientForm({
           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="diagnosis">Initial Diagnosis</Label>
-        <Textarea
-          id="diagnosis"
-          value={formData.diagnosis}
-          onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
-          rows={3}
-        />
-      </div>
-      {/* Vitals Section */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="bloodPressure">Blood Pressure</Label>
-          <Input
-            id="bloodPressure"
-            value={formData.bloodPressure}
-            onChange={(e) => setFormData({ ...formData, bloodPressure: e.target.value })}
-            placeholder="e.g., 120/80"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="heartRate">Heart Rate</Label>
-          <Input
-            id="heartRate"
-            type="number"
-            value={formData.heartRate}
-            onChange={(e) => setFormData({ ...formData, heartRate: e.target.value })}
-            placeholder="e.g., 72"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="temperature">Temperature (°F)</Label>
-          <Input
-            id="temperature"
-            type="number"
-            value={formData.temperature}
-            onChange={(e) => setFormData({ ...formData, temperature: e.target.value })}
-            placeholder="e.g., 98.6"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="oxygenSaturation">O2 Saturation (%)</Label>
-          <Input
-            id="oxygenSaturation"
-            type="number"
-            value={formData.oxygenSaturation}
-            onChange={(e) => setFormData({ ...formData, oxygenSaturation: e.target.value })}
-            placeholder="e.g., 98"
-          />
-        </div>
-      </div>
+      {user.role === "doctor" && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="diagnosis">Initial Diagnosis</Label>
+            <Textarea
+              id="diagnosis"
+              value={formData.diagnosis}
+              onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
+              rows={3}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="bloodPressure">Blood Pressure</Label>
+            <Input
+              id="bloodPressure"
+              value={formData.bloodPressure}
+              onChange={(e) => setFormData({ ...formData, bloodPressure: e.target.value })}
+              placeholder="e.g., 120/80"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="heartRate">Heart Rate</Label>
+            <Input
+              id="heartRate"
+              type="number"
+              value={formData.heartRate}
+              onChange={(e) => setFormData({ ...formData, heartRate: e.target.value })}
+              placeholder="e.g., 72"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="temperature">Temperature (°F)</Label>
+            <Input
+              id="temperature"
+              type="number"
+              value={formData.temperature}
+              onChange={(e) => setFormData({ ...formData, temperature: e.target.value })}
+              placeholder="e.g., 98.6"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="oxygenSaturation">O2 Saturation (%)</Label>
+            <Input
+              id="oxygenSaturation"
+              type="number"
+              value={formData.oxygenSaturation}
+              onChange={(e) => setFormData({ ...formData, oxygenSaturation: e.target.value })}
+              placeholder="e.g., 98"
+            />
+          </div>
+        </>
+      )}
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
@@ -614,6 +638,15 @@ function AddPatientForm({
 function PatientDetailsModal({ patient, role, onUpdateHistory }: { patient: Patient; role: string; onUpdateHistory?: (updatedHistory: string[]) => void }) {
   const [editingHistoryIndex, setEditingHistoryIndex] = useState<number | null>(null);
   const [editingHistoryValue, setEditingHistoryValue] = useState("");
+  const [showAddBill, setShowAddBill] = useState(false);
+  const [billService, setBillService] = useState("");
+  const [billQuantity, setBillQuantity] = useState(1);
+  const [billPrice, setBillPrice] = useState(0);
+  const [editBillIdx, setEditBillIdx] = useState<number | null>(null);
+  const [editBillService, setEditBillService] = useState("");
+  const [editBillQuantity, setEditBillQuantity] = useState(1);
+  const [editBillPrice, setEditBillPrice] = useState(0);
+  const [showDeleteBillIdx, setShowDeleteBillIdx] = useState<number | null>(null);
 
   const handleEditHistory = async (index: number, newValue: string) => {
     if (!onUpdateHistory) return;
@@ -649,6 +682,48 @@ function PatientDetailsModal({ patient, role, onUpdateHistory }: { patient: Pati
           Patient ID: {patient.id} • Admitted: {patient.admissionDate ? patient.admissionDate.toLocaleDateString() : "N/A"}
         </DialogDescription>
       </DialogHeader>
+
+      {role === "receptionist" && (
+        <>
+          <Button onClick={() => setShowAddBill(true)} className="mb-2">Add Manual Bill</Button>
+          <Dialog open={showAddBill} onOpenChange={setShowAddBill}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Manual Bill</DialogTitle>
+                <DialogDescription>Enter details for the new billable service.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2">
+                <Label>Service Name</Label>
+                <Input value={billService} onChange={e => setBillService(e.target.value)} placeholder="e.g. Lab Test" />
+                <Label>Quantity</Label>
+                <Input type="number" value={billQuantity} min={1} onChange={e => setBillQuantity(Number(e.target.value))} />
+                <Label>Price (₹)</Label>
+                <Input type="number" value={billPrice} min={0} onChange={e => setBillPrice(Number(e.target.value))} />
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setShowAddBill(false)}>Cancel</Button>
+                <Button onClick={async () => {
+                  if (!db || !patient.id || !billService || billPrice <= 0) return;
+                  const newBill = {
+                    id: `manual-${Date.now()}`,
+                    date: new Date().toISOString(),
+                    items: [{ name: billService, quantity: billQuantity, price: billPrice }],
+                    total: billQuantity * billPrice,
+                    status: "unpaid"
+                  };
+                  const bills = Array.isArray(patient.bills) ? [...patient.bills, newBill] : [newBill];
+                  await setDoc(doc(db, "patients", patient.id), { bills }, { merge: true });
+                  setShowAddBill(false);
+                  setBillService("");
+                  setBillQuantity(1);
+                  setBillPrice(0);
+                  window.location.reload();
+                }}>Add Bill</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
@@ -801,6 +876,162 @@ function PatientDetailsModal({ patient, role, onUpdateHistory }: { patient: Pati
           </CardContent>
         </Card>
       )}
+
+      {/* --- Bills & Payments section for Receptionist --- */}
+      {role === "receptionist" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Bills & Payments</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Outstanding Balance */}
+            <div className="mb-4">
+              <span className="font-semibold">Outstanding Balance: </span>
+              <span className="text-red-600 font-bold">
+                ₹{Array.isArray(patient.bills)
+                  ? patient.bills?.filter((b: any) => b.status !== "paid").reduce((sum: number, b: any) => sum + (b.total || 0), 0)
+                  : 0}
+              </span>
+            </div>
+            {/* Bill List */}
+            {Array.isArray(patient.bills) && patient.bills?.length > 0 ? (
+              <div className="space-y-4">
+                {patient.bills?.map((bill: any, idx: number) => (
+                  <div key={bill.id || idx} className="border rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div>
+                      <div className="font-semibold">Date: {bill.date ? new Date(bill.date).toLocaleDateString() : "N/A"}</div>
+                      <div className="text-sm text-gray-600">Status: 
+                        <span className={bill.status === "paid" ? "text-green-600" : "text-red-600"}> {bill.status || "unpaid"}</span>
+                      </div>
+                      <div className="text-sm text-gray-600">Total: <span className="font-bold">₹{bill.total || 0}</span></div>
+                      <div className="text-xs text-gray-500">Bill ID: {bill.id}</div>
+                      <div className="mt-2">
+                        <span className="font-medium">Items:</span>
+                        <ul className="list-disc ml-5">
+                          {bill.items && bill.items.map((item: any, i: number) => (
+                            <li key={i}>
+                              {item.name} ({item.quantity || 1}) - ₹{item.price || 0}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {/* Mark as Paid logic */}
+                      {bill.status !== "paid" && (
+                        <Button
+                          size="sm"
+                          onClick={async () => {
+                            if (!db || !patient.id) return;
+                            // Update the bill status in Firestore
+                            const updatedBills = patient.bills?.map((b: any, i: number) => i === idx ? { ...b, status: "paid" } : b) || [];
+                            await setDoc(doc(db, "patients", patient.id), { bills: updatedBills }, { merge: true });
+                            window.location.reload();
+                          }}
+                        >
+                          Mark as Paid
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          // --- Download/Print logic ---
+                          const printWindow = window.open('', '', 'width=800,height=600');
+                          if (printWindow) {
+                            printWindow.document.write('<html><head><title>Bill</title></head><body>');
+                            printWindow.document.write(`<h2>Bill ID: ${bill.id}</h2>`);
+                            printWindow.document.write(`<p><strong>Date:</strong> ${bill.date ? new Date(bill.date).toLocaleDateString() : 'N/A'}</p>`);
+                            printWindow.document.write(`<p><strong>Status:</strong> ${bill.status}</p>`);
+                            printWindow.document.write(`<p><strong>Total:</strong> ₹${bill.total || 0}</p>`);
+                            printWindow.document.write('<h3>Items:</h3><ul>');
+                            bill.items?.forEach((item: any) => {
+                              printWindow!.document.write(`<li>${item.name} (${item.quantity || 1}) - ₹${item.price || 0}</li>`);
+                            });
+                            printWindow.document.write('</ul>');
+                            printWindow.document.write('</body></html>');
+                            printWindow.document.close();
+                            printWindow.focus();
+                            printWindow.print();
+                          }
+                        }}
+                      >
+                        Download/Print
+                      </Button>
+                      {bill.status !== "paid" && (
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setEditBillIdx(idx);
+                            setEditBillService(bill.items[0]?.name || "");
+                            setEditBillQuantity(bill.items[0]?.quantity || 1);
+                            setEditBillPrice(bill.items[0]?.price || 0);
+                          }}>Edit</Button>
+                          <Button size="sm" variant="destructive" onClick={() => setShowDeleteBillIdx(idx)}>Delete</Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-gray-500">No bills found for this patient.</div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Edit Bill Dialog */}
+      <Dialog open={editBillIdx !== null} onOpenChange={open => { if (!open) setEditBillIdx(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Bill</DialogTitle>
+            <DialogDescription>Update the bill details.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Service Name</Label>
+            <Input value={editBillService} onChange={e => setEditBillService(e.target.value)} />
+            <Label>Quantity</Label>
+            <Input type="number" value={editBillQuantity} min={1} onChange={e => setEditBillQuantity(Number(e.target.value))} />
+            <Label>Price (₹)</Label>
+            <Input type="number" value={editBillPrice} min={0} onChange={e => setEditBillPrice(Number(e.target.value))} />
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setEditBillIdx(null)}>Cancel</Button>
+            <Button onClick={async () => {
+              if (!db || !patient.id || !editBillService || editBillPrice <= 0 || editBillIdx === null) return;
+              const bills = Array.isArray(patient.bills) ? [...patient.bills] : [];
+              bills[editBillIdx] = {
+                ...bills[editBillIdx],
+                items: [{ name: editBillService, quantity: editBillQuantity, price: editBillPrice }],
+                total: editBillQuantity * editBillPrice
+              };
+              await setDoc(doc(db, "patients", patient.id), { bills }, { merge: true });
+              setEditBillIdx(null);
+              window.location.reload();
+            }}>Save Changes</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Bill Confirmation Dialog */}
+      <Dialog open={showDeleteBillIdx !== null} onOpenChange={open => { if (!open) setShowDeleteBillIdx(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Bill</DialogTitle>
+            <DialogDescription>Are you sure you want to delete this bill?</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowDeleteBillIdx(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={async () => {
+              if (!db || !patient.id || showDeleteBillIdx === null) return;
+              const bills = Array.isArray(patient.bills) ? patient.bills.filter((_, i) => i !== showDeleteBillIdx) : [];
+              await setDoc(doc(db, "patients", patient.id), { bills }, { merge: true });
+              setShowDeleteBillIdx(null);
+              window.location.reload();
+            }}>Delete</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
