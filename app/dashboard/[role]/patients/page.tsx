@@ -25,6 +25,7 @@ import { Search, Plus, Eye, FileText, Heart, Phone, MapPin, Calendar, Activity }
 import { collection, getDocs, setDoc, doc, updateDoc, deleteField } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Patient, Staff } from "@/lib/types"
+import { askGeminiServer } from "@/lib/gemini"
 
 export default function PatientsPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
@@ -44,6 +45,8 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
   const [noteContent, setNoteContent] = useState("")
   const [deletingHistoryIndex, setDeletingHistoryIndex] = useState<number | null>(null)
   const [doctors, setDoctors] = useState<Staff[]>([])
+  const [summary, setSummary] = useState<string | null>(null)
+  const [loadingSummary, setLoadingSummary] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -161,6 +164,80 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
     setShowAddNote(false)
     setNotePatient(null)
     setNoteContent("")
+  }
+
+  async function handleGenerateSummary() {
+    setLoadingSummary(true);
+    setSummary(null);
+    try {
+      if (!selectedPatient) {
+        setSummary("No patient selected. Please select a patient first.");
+        return;
+      }
+      
+      const prompt = `Generate a comprehensive health summary for the following patient. Provide clear, professional insights for both doctors and nurses in plain text format without any markdown formatting.
+
+PATIENT INFORMATION:
+Name: ${selectedPatient.name || 'Unknown'}
+Age: ${selectedPatient.age || 'Unknown'}
+Gender: ${selectedPatient.gender || 'Unknown'}
+Diagnosis: ${selectedPatient.diagnosis || 'No diagnosis recorded'}
+Status: ${selectedPatient.status || 'Unknown'}
+Assigned Doctor: ${selectedPatient.assignedDoctor || 'Not assigned'}
+
+CURRENT VITALS:
+Blood Pressure: ${selectedPatient.vitals?.bloodPressure || 'Not recorded'}
+Heart Rate: ${selectedPatient.vitals?.heartRate || 'Not recorded'} bpm
+Temperature: ${selectedPatient.vitals?.temperature || 'Not recorded'}°F
+Oxygen Saturation: ${selectedPatient.vitals?.oxygenSaturation || 'Not recorded'}%
+
+MEDICAL HISTORY:
+${selectedPatient.history?.length > 0 ? selectedPatient.history.join('\n') : 'No recorded history'}
+
+Please provide a comprehensive summary in plain text format (NO asterisks, NO markdown) organized as follows:
+
+PATIENT OVERVIEW:
+Brief summary of current condition and status
+
+FOR DOCTORS:
+- Clinical assessment and differential diagnosis considerations
+- Medication recommendations and dosage adjustments
+- Treatment plan modifications
+- Specialist referral needs
+- Diagnostic test requirements
+
+FOR NURSES:
+- Monitoring priorities and frequency
+- Vital signs watch points
+- Patient safety considerations
+- Care interventions and comfort measures
+- Patient education topics
+- Family communication points
+
+IMMEDIATE PRIORITIES:
+Key actions needed in next 24 hours
+
+RISK ASSESSMENT:
+Potential complications to monitor
+
+Use clear, professional language without any special formatting characters.`;
+      
+      const result = await askGeminiServer(prompt);
+      // Clean up any remaining markdown formatting
+      const cleanedResult = result
+        .replace(/\*\*/g, '') // Remove bold asterisks
+        .replace(/\*/g, '') // Remove italic asterisks
+        .replace(/#{1,6}\s/g, '') // Remove header hashtags
+        .replace(/`/g, '') // Remove code backticks
+        .trim();
+      
+      setSummary(cleanedResult || "No summary generated. Please try again.");
+    } catch (error) {
+      console.error('Error generating summary:', error);
+      setSummary("Failed to generate summary. Please check your connection and try again.");
+    } finally {
+      setLoadingSummary(false);
+    }
   }
 
   return (
@@ -358,7 +435,7 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
                   <div className="flex flex-col gap-2 ml-4">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" onClick={() => setSelectedPatient(patient)}>
+                        <Button variant="outline" size="sm" onClick={() => { setSelectedPatient(patient); setShowAddNote(true); }}>
                           <Eye className="mr-2 h-4 w-4" />
                           View Details
                         </Button>
@@ -573,7 +650,7 @@ function AddPatientForm({
           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
         />
       </div>
-      {user.role === "doctor" && (
+      {user?.role === "doctor" && (
         <>
           <div className="space-y-2">
             <Label htmlFor="diagnosis">Initial Diagnosis</Label>
@@ -647,6 +724,8 @@ function PatientDetailsModal({ patient, role, onUpdateHistory }: { patient: Pati
   const [editBillQuantity, setEditBillQuantity] = useState(1);
   const [editBillPrice, setEditBillPrice] = useState(0);
   const [showDeleteBillIdx, setShowDeleteBillIdx] = useState<number | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
 
   const handleEditHistory = async (index: number, newValue: string) => {
     if (!onUpdateHistory) return;
@@ -665,6 +744,74 @@ function PatientDetailsModal({ patient, role, onUpdateHistory }: { patient: Pati
     setEditingHistoryValue("");
   };
 
+  async function handleGenerateSummary() {
+    setLoadingSummary(true);
+    setSummary(null);
+    try {
+      const prompt = `Generate a comprehensive health summary for the following patient. Provide clear, professional insights for both doctors and nurses in plain text format without any markdown formatting.
+
+PATIENT INFORMATION:
+Name: ${patient.name || 'Unknown'}
+Age: ${patient.age || 'Unknown'}
+Gender: ${patient.gender || 'Unknown'}
+Diagnosis: ${patient.diagnosis || 'No diagnosis recorded'}
+Status: ${patient.status || 'Unknown'}
+Assigned Doctor: ${patient.assignedDoctor || 'Not assigned'}
+
+CURRENT VITALS:
+Blood Pressure: ${patient.vitals?.bloodPressure || 'Not recorded'}
+Heart Rate: ${patient.vitals?.heartRate || 'Not recorded'} bpm
+Temperature: ${patient.vitals?.temperature || 'Not recorded'}°F
+Oxygen Saturation: ${patient.vitals?.oxygenSaturation || 'Not recorded'}%
+
+MEDICAL HISTORY:
+${patient.history?.length > 0 ? patient.history.join('\n') : 'No recorded history'}
+
+Please provide a comprehensive summary in plain text format (NO asterisks, NO markdown) organized as follows:
+
+PATIENT OVERVIEW:
+Brief summary of current condition and status
+
+FOR DOCTORS:
+- Clinical assessment and differential diagnosis considerations
+- Medication recommendations and dosage adjustments
+- Treatment plan modifications
+- Specialist referral needs
+- Diagnostic test requirements
+
+FOR NURSES:
+- Monitoring priorities and frequency
+- Vital signs watch points
+- Patient safety considerations
+- Care interventions and comfort measures
+- Patient education topics
+- Family communication points
+
+IMMEDIATE PRIORITIES:
+Key actions needed in next 24 hours
+
+RISK ASSESSMENT:
+Potential complications to monitor
+
+Use clear, professional language without any special formatting characters.`;
+      
+      const result = await askGeminiServer(prompt);
+      // Clean up any remaining markdown formatting
+      const cleanedResult = result
+        .replace(/\*\*/g, '') // Remove bold asterisks
+        .replace(/\*/g, '') // Remove italic asterisks
+        .replace(/#{1,6}\s/g, '') // Remove header hashtags
+        .replace(/`/g, '') // Remove code backticks
+        .trim();
+      
+      setSummary(cleanedResult || "No summary generated. Please try again.");
+    } catch (e) {
+      console.error('Error generating summary:', e);
+      setSummary("Failed to generate summary. Please check your connection and try again.");
+    }
+    setLoadingSummary(false);
+  }
+
   return (
     <div className="space-y-6">
       <DialogHeader>
@@ -682,6 +829,18 @@ function PatientDetailsModal({ patient, role, onUpdateHistory }: { patient: Pati
           Patient ID: {patient.id} • Admitted: {patient.admissionDate ? patient.admissionDate.toLocaleDateString() : "N/A"}
         </DialogDescription>
       </DialogHeader>
+
+      {/* Gemini Health Summary Button & Display */}
+      <div>
+        <Button onClick={handleGenerateSummary} disabled={loadingSummary} className="mb-2">
+          {loadingSummary ? "Generating..." : "Generate Health Summary (AI)"}
+        </Button>
+        {summary && (
+          <div className="mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded text-gray-900 whitespace-pre-line">
+            {summary}
+          </div>
+        )}
+      </div>
 
       {role === "receptionist" && (
         <>

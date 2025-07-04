@@ -4,11 +4,13 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Calendar, FileText, Clock, AlertCircle, Plus } from "lucide-react"
+import { Users, Calendar, FileText, Clock, AlertCircle, Plus, Brain } from "lucide-react"
 import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Patient, Prescription } from "@/lib/types"
 import { useAuth } from "@/components/providers/auth-provider"
+import AIQuickInsights from "@/components/ai/ai-quick-insights"
+import AIDiagnosticAssistant from "@/components/ai/ai-diagnostic-assistant"
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
@@ -78,6 +80,9 @@ export default function DoctorDashboard() {
         </Card>
       </div>
 
+      {/* AI Quick Insights */}
+      <AIQuickInsights patients={myPatients} />
+
       {/* Critical Patients Alert */}
       {criticalPatients.length > 0 && (
         <Card className="border-red-200 bg-red-50">
@@ -107,6 +112,9 @@ export default function DoctorDashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* AI Diagnostic Assistant */}
+      <AIDiagnosticAssistant />
 
       {/* Quick Actions */}
       <Card>
