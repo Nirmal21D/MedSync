@@ -83,8 +83,8 @@ export default function BedManagementPage() {
     <div className="max-w-5xl mx-auto py-10 space-y-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2"><BedIcon className="h-7 w-7 text-blue-600" /> Bed Management</h1>
-          <p className="text-gray-600">Manage all hospital beds, add new beds, and filter by status, type, or ward.</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><BedIcon className="h-7 w-7 text-blue-600" /> Bed Management</h1>
+          <p className="text-gray-600 dark:text-gray-300">Manage all hospital beds, add new beds, and filter by status, type, or ward.</p>
         </div>
         <Button onClick={() => setShowAddBed(true)} className="flex items-center gap-2">
           <Plus className="h-4 w-4" /> Add Bed
@@ -130,7 +130,7 @@ export default function BedManagementPage() {
       </div>
 
       {/* Bed List */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-900 shadow-lg">
         <CardHeader>
           <CardTitle>All Beds</CardTitle>
           <CardDescription>List of all beds in the hospital</CardDescription>
@@ -173,7 +173,7 @@ export default function BedManagementPage() {
 
       {/* Add Bed Modal */}
       <Dialog open={showAddBed} onOpenChange={setShowAddBed}>
-        <DialogContent>
+        <DialogContent className="bg-white dark:bg-gray-900 shadow-lg">
           <DialogHeader>
             <DialogTitle>Add New Bed</DialogTitle>
             <DialogDescription>Enter bed details to add a new bed to the system.</DialogDescription>

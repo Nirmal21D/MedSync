@@ -73,47 +73,55 @@ export default function PharmacistDashboard() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Pending Prescriptions</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+        <Card className="bg-white dark:bg-black shadow-lg border-none">
+          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <Clock className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+            </div>
+            <CardTitle className="ml-4 text-sm font-medium text-gray-900 dark:text-white">Pending Prescriptions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{pendingPrescriptions.length}</div>
-            <p className="text-xs text-muted-foreground">Awaiting review</p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{pendingPrescriptions.length}</div>
+            <p className="text-xs text-gray-600 dark:text-gray-300">Awaiting review</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Approved Today</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+        <Card className="bg-white dark:bg-black shadow-lg border-none">
+          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-300" />
+            </div>
+            <CardTitle className="ml-4 text-sm font-medium text-gray-900 dark:text-white">Approved Today</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{approvedPrescriptions.length}</div>
-            <p className="text-xs text-muted-foreground">Processed prescriptions</p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{approvedPrescriptions.length}</div>
+            <p className="text-xs text-gray-600 dark:text-gray-300">Processed prescriptions</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Medicine Stock</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+        <Card className="bg-white dark:bg-black shadow-lg border-none">
+          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+            <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+              <Package className="h-4 w-4 text-purple-600 dark:text-purple-300" />
+            </div>
+            <CardTitle className="ml-4 text-sm font-medium text-gray-900 dark:text-white">Medicine Stock</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{medicineInventory.length}</div>
-            <p className="text-xs text-muted-foreground">Total medicines</p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{medicineInventory.length}</div>
+            <p className="text-xs text-gray-600 dark:text-gray-300">Total medicines</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Low Stock Alerts</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+        <Card className="bg-white dark:bg-black shadow-lg border-none">
+          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+            <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+              <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-300" />
+            </div>
+            <CardTitle className="ml-4 text-sm font-medium text-gray-900 dark:text-white">Low Stock Alerts</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600 dark:text-orange-300">{lowStockMedicines.length}</div>
-            <p className="text-xs text-muted-foreground">Need restocking</p>
+            <p className="text-xs text-gray-600 dark:text-gray-300">Need restocking</p>
           </CardContent>
         </Card>
       </div>

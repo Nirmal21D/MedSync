@@ -49,6 +49,29 @@
   }
 }
 
+/* Hide scrollbars for elements with .scrollbar-none */
+.scrollbar-none {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+html, body {
+  overflow-x: hidden !important;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.animate-bgMove {
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
 @layer base {
   * {
     @apply border-border;

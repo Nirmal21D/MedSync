@@ -46,7 +46,7 @@ export default function DoctorDashboard() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-foreground">My Patients</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -57,7 +57,7 @@ export default function DoctorDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Prescriptions</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
@@ -68,7 +68,7 @@ export default function DoctorDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-foreground">Critical Alerts</CardTitle>
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
@@ -85,7 +85,7 @@ export default function DoctorDashboard() {
 
       {/* Critical Patients Alert */}
       {criticalPatients.length > 0 && (
-        <Card className="border-red-200 bg-red-50 dark:bg-red-900/40">
+        <Card className="border-red-200 bg-red-50 dark:bg-red-900/40 glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader>
             <CardTitle className="text-red-800 dark:text-red-200 flex items-center">
               <AlertCircle className="mr-2 h-5 w-5" />
@@ -117,7 +117,7 @@ export default function DoctorDashboard() {
       <AIDiagnosticAssistant />
 
       {/* Quick Actions */}
-      <Card className="bg-card">
+      <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
         <CardHeader>
           <CardTitle className="text-foreground">Quick Actions</CardTitle>
           <CardDescription className="text-muted-foreground">Common tasks and shortcuts</CardDescription>

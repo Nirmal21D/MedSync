@@ -9,6 +9,7 @@ import { aiHealthcare } from "@/lib/gemini"
 import type { Patient } from "@/lib/types"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 
 interface AIQuickInsightsProps {
   patients: Patient[]
@@ -109,132 +110,118 @@ export default function AIQuickInsights({ patients, className }: AIQuickInsights
           newInsights.push({
             type: 'trend',
             title: 'Patient Status Overview',
-            description: `All patients appear stable - no high-risk cases detected in recent assessment`,
+            description: 'All patients appear stable - no high-risk cases detected in recent assessment',
             severity: 'low'
           })
         }
         
         setInsights(newInsights)
       } catch (err) {
-        console.error('Error generating AI insights:', err)
-        setError('Failed to generate AI insights. Please try again.')
+        setError('Failed to generate insights.')
+        console.error(err)
       } finally {
         setLoading(false)
       }
     }
 
-    if (patients.length > 0) {
-      generateQuickInsights()
-    } else {
-      setLoading(false)
-    }
+    generateQuickInsights()
   }, [patients])
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'destructive'
-      case 'high': return 'destructive'
-      case 'medium': return 'secondary'
-      case 'low': return 'outline'
-      default: return 'outline'
-    }
-  }
-
-  const getInsightIcon = (type: string) => {
-    switch (type) {
-      case 'high-risk': return <AlertTriangle className="h-4 w-4" />
-      case 'critical': return <Activity className="h-4 w-4" />
-      case 'medication-alert': return <AlertTriangle className="h-4 w-4" />
-      case 'trend': return <TrendingUp className="h-4 w-4" />
-      default: return <Brain className="h-4 w-4" />
-    }
-  }
-
-  if (loading) {
+  if (loading && insights.length === 0) {
     return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Brain className="mr-2 h-5 w-5" />
-            AI Quick Insights
-          </CardTitle>
-          <CardDescription>AI-powered patient monitoring and alerts</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </CardContent>
-      </Card>
+      <div className="grid gap-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
     )
   }
 
   if (error) {
     return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center text-destructive">
-            <AlertTriangle className="mr-2 h-5 w-5" />
-            AI Insights Error
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
     )
   }
 
+  if (insights.length === 0) {
+    return (
+      <Alert>
+        <Activity className="h-4 w-4" />
+        <AlertDescription>No insights available.</AlertDescription>
+      </Alert>
+    )
+  }
+
+  const getInsightIcon = (type: QuickInsight['type']) => {
+    switch (type) {
+      case 'high-risk':
+        return <AlertTriangle className="h-5 w-5 text-destructive" />;
+      case 'critical':
+        return <AlertTriangle className="h-5 w-5 text-destructive" />;
+      case 'medication-alert':
+        return <AlertTriangle className="h-5 w-5 text-destructive" />;
+      case 'trend':
+        return <TrendingUp className="h-5 w-5 text-secondary" />;
+      default:
+        return <Activity className="h-5 w-5 text-muted-foreground" />;
+    }
+  };
+
+  const getSeverityColor = (severity: QuickInsight['severity']) => {
+    switch (severity) {
+      case 'critical':
+        return 'destructive';
+      case 'high':
+        return 'secondary';
+      case 'medium':
+        return 'secondary';
+      default:
+        return 'default';
+    }
+  };
+
   return (
-    <Card className={className}>
+    <Card className={`glass-card bg-card backdrop-blur-xl shadow-lg ${className || ''}`.trim()}>
       <CardHeader>
-        <CardTitle className="flex items-center">
+        <CardTitle className="flex items-center text-foreground dark:text-white">
           <Brain className="mr-2 h-5 w-5" />
           AI Quick Insights
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-muted-foreground dark:text-gray-300">
           AI-powered patient monitoring and alerts ({insights.length} insights)
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        {insights.length === 0 ? (
-          <div className="text-center py-6 text-gray-500">
-            <Brain className="mx-auto h-12 w-12 mb-4 opacity-50" />
-            <p>No critical insights at the moment.</p>
-            <p className="text-sm">All patients appear to be stable.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {insights.map((insight, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                <div className="flex-shrink-0 mt-1">
-                  {getInsightIcon(insight.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-900">
-                      {insight.title}
-                    </p>
-                    <Badge variant={getSeverityColor(insight.severity)}>
-                      {insight.severity}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-600">{insight.description}</p>
-                </div>
+      <CardContent className="space-y-3">
+        {insights.map((insight, idx) => (
+          <div
+            key={idx}
+            className={
+              cn(
+                "flex items-center justify-between p-4 rounded-lg border text-foreground dark:text-white",
+                insight.severity === "critical"
+                  ? "border-destructive bg-destructive/5 dark:bg-[#18181b]"
+                  : insight.severity === "high"
+                  ? "border-destructive bg-destructive/5 dark:bg-[#18181b]"
+                  : insight.severity === "medium"
+                  ? "border-secondary bg-secondary/10 dark:bg-[#18181b]"
+                  : "border-muted bg-muted/10 dark:bg-[#18181b]",
+                idx === insights.length - 1 && "mb-0"
+              )
+            }
+          >
+            <div className="flex items-center gap-3">
+              {getInsightIcon(insight.type)}
+              <div>
+                <p className="font-semibold text-foreground dark:text-white">{insight.title}</p>
+                <p className="text-sm text-muted-foreground dark:text-gray-300">{insight.description}</p>
               </div>
-            ))}
+            </div>
+            <Badge variant={getSeverityColor(insight.severity)}>{insight.severity}</Badge>
           </div>
-        )}
-        
-        {insights.length > 0 && (
-          <div className="mt-4 pt-4 border-t">
-            <Button variant="outline" className="w-full">
-              View Detailed AI Analysis
-            </Button>
-          </div>
-        )}
+        ))}
       </CardContent>
     </Card>
   )

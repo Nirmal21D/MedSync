@@ -389,7 +389,7 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               {role === "doctor" ? "My Prescriptions" : "Prescription Management"}
             </h1>
             <p className="text-gray-600">
@@ -404,7 +404,7 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
                   New Prescription
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl">
+              <DialogContent className="max-w-4xl glass-card bg-card backdrop-blur-xl shadow-lg">
                 <DialogHeader>
                   <DialogTitle>Create New Prescription</DialogTitle>
                   <DialogDescription>Add medicines and instructions for a patient</DialogDescription>
@@ -416,7 +416,7 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
         </div>
 
         {/* Filters */}
-        <Card>
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
@@ -447,27 +447,27 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
 
         {/* Prescription Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <FileText className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total</p>
-                  <p className="text-2xl font-bold">{filteredPrescriptions.length}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-white">Total</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredPrescriptions.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-orange-100 rounded-lg">
                   <Clock className="h-6 w-6 text-orange-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-white">Pending</p>
                   <p className="text-2xl font-bold">
                     {filteredPrescriptions.filter((p) => p.status === "pending").length}
                   </p>
@@ -475,14 +475,14 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Approved</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-white">Approved</p>
                   <p className="text-2xl font-bold">
                     {filteredPrescriptions.filter((p) => p.status === "approved").length}
                   </p>
@@ -490,14 +490,14 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-red-100 rounded-lg">
                   <X className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Rejected</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-white">Rejected</p>
                   <p className="text-2xl font-bold">
                     {filteredPrescriptions.filter((p) => p.status === "rejected").length}
                   </p>
@@ -509,234 +509,212 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
 
         {/* Prescriptions List */}
         <div className="space-y-4">
-          {filteredPrescriptions.map((prescription) => (
-            <Card key={prescription.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold">{prescription.patientName}</h3>
-                      <Badge
-                        variant={
-                          prescription.status === "pending"
-                            ? "secondary"
-                            : prescription.status === "approved"
-                              ? "default"
-                              : "destructive"
-                        }
-                      >
-                        {prescription.status}
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <User className="mr-2 h-4 w-4" />
-                        {prescription.doctorName}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {formatDate(prescription.createdAt)}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Pill className="mr-2 h-4 w-4" />
-                        {prescription.medicines.length} medicine(s)
-                      </div>
-                    </div>
-
-                    {/* Medicines */}
-                    <div className="space-y-2 mb-4">
-                      <h4 className="font-medium text-sm">Medicines:</h4>
-                      {prescription.medicines.map((medicine, index) => (
-                        <div key={index} className="bg-gray-50 p-3 rounded-lg">
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
-                            <div>
-                              <span className="font-medium">{medicine.name}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">Dosage: {medicine.dosage}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">Frequency: {medicine.frequency}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">Duration: {medicine.duration}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {prescription.notes && (
-                      <div className="mb-4">
-                        <h4 className="font-medium text-sm mb-1">Notes:</h4>
-                        <p className="text-sm text-gray-600 bg-blue-50 p-2 rounded">{prescription.notes}</p>
-                      </div>
-                    )}
-
-                    {prescription.processedAt && (
-                      <div className="text-sm text-gray-500">
-                        Processed by {prescription.processedBy} on {formatDate(prescription.processedAt)}
-                      </div>
-                    )}
+          {filteredPrescriptions.map((prescription: Prescription) => (
+            <Card key={prescription.id} className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
+              <CardContent className="p-6 flex flex-col gap-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{prescription.patientName}</h3>
+                    <Badge
+                      variant={
+                        prescription.status === "pending"
+                          ? "secondary"
+                          : prescription.status === "approved"
+                            ? "default"
+                            : "destructive"
+                      }
+                    >
+                      {prescription.status}
+                    </Badge>
                   </div>
-
-                  {role === "pharmacist" && prescription.status === "pending" && (
-                    <div className="flex flex-col gap-2 ml-4">
-                      <Dialog open={approveDialogOpen && approvePrescription?.id === prescription.id} onOpenChange={open => { setApproveDialogOpen(open); if (!open) setApprovePrescription(null) }}>
-                        <DialogTrigger asChild>
-                          <Button onClick={() => openApproveDialog(prescription)} className="flex-1">
+                  <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-300">
+                    <span className="flex items-center"><User className="mr-2 h-4 w-4" />{prescription.doctorName}</span>
+                    <span className="flex items-center"><Calendar className="mr-2 h-4 w-4" />{formatDate(prescription.createdAt)}</span>
+                    <span className="flex items-center"><Pill className="mr-2 h-4 w-4" />{prescription.medicines.length} medicine(s)</span>
+                  </div>
+                </div>
+                {/* Medicines */}
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm text-gray-900 dark:text-white">Medicines:</h4>
+                  <div className="flex flex-col gap-2">
+                    {prescription.medicines.map((medicine: Prescription['medicines'][0], index: number) => (
+                      <div key={index} className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-sm">
+                          <span className="font-medium">{medicine.name}</span>
+                          <span className="text-gray-600 dark:text-gray-300">Dosage: {medicine.dosage}</span>
+                          <span className="text-gray-600 dark:text-gray-300">Frequency: {medicine.frequency}</span>
+                          <span className="text-gray-600 dark:text-gray-300">Duration: {medicine.duration}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {prescription.notes && (
+                  <div>
+                    <h4 className="font-medium text-sm mb-1 text-gray-900 dark:text-white">Notes:</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-100 bg-blue-50 dark:bg-blue-900/40 p-2 rounded-lg">{prescription.notes}</p>
+                  </div>
+                )}
+                {prescription.processedAt && (
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Processed by {prescription.processedBy} on {formatDate(prescription.processedAt)}
+                  </div>
+                )}
+                {role === "pharmacist" && prescription.status === "pending" && (
+                  <div className="flex flex-col gap-2 mt-4">
+                    <Dialog open={approveDialogOpen && approvePrescription?.id === prescription.id} onOpenChange={open => { setApproveDialogOpen(open); if (!open) setApprovePrescription(null) }}>
+                      <DialogTrigger asChild>
+                        <Button onClick={() => openApproveDialog(prescription)} className="flex-1">
                         <CheckCircle className="mr-2 h-4 w-4" />
                         Approve
                       </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Approve Prescription</DialogTitle>
-                            <DialogDescription>Review and dispense medicines. Adjust quantities as needed.</DialogDescription>
-                          </DialogHeader>
-                          {approvePrescription && approvePrescription.medicines.map((med, idx) => {
-                            let inv = inventoryMap[med.name]
-                            const isLow = inv && (inv.quantity <= inv.minThreshold)
-                            const isOut = inv && (inv.quantity <= 0)
-                            // If not found, allow selection
-                            const notFound = !inv
-                            let fallbackInv: InventoryItem | undefined = undefined
-                            if (notFound && fallbackInventorySelection[med.name]) {
-                              fallbackInv = allInventory.find(i => i.id === fallbackInventorySelection[med.name])
-                              if (fallbackInv) {
-                                inv = {
-                                  id: fallbackInv.id,
-                                  quantity: fallbackInv.quantity,
-                                  minThreshold: fallbackInv.minThreshold,
-                                  unit: fallbackInv.unit,
-                                }
+                      </DialogTrigger>
+                      <DialogContent className="glass-card bg-card backdrop-blur-xl shadow-lg">
+                        <DialogHeader>
+                          <DialogTitle>Approve Prescription</DialogTitle>
+                          <DialogDescription>Review and dispense medicines. Adjust quantities as needed.</DialogDescription>
+                        </DialogHeader>
+                        {approvePrescription && approvePrescription.medicines.map((med, idx) => {
+                          let inv = inventoryMap[med.name]
+                          const isLow = inv && (inv.quantity <= inv.minThreshold)
+                          const isOut = inv && (inv.quantity <= 0)
+                          // If not found, allow selection
+                          const notFound = !inv
+                          let fallbackInv: InventoryItem | undefined = undefined
+                          if (notFound && fallbackInventorySelection[med.name]) {
+                            fallbackInv = allInventory.find(i => i.id === fallbackInventorySelection[med.name])
+                            if (fallbackInv) {
+                              inv = {
+                                id: fallbackInv.id,
+                                quantity: fallbackInv.quantity,
+                                minThreshold: fallbackInv.minThreshold,
+                                unit: fallbackInv.unit,
                               }
                             }
-                            // Quantity in prescription (default 1, but can be extended)
-                            const prescribedQty = 'quantity' in med && typeof (med as any).quantity === 'number' ? (med as any).quantity : 1
-                            return (
-                              <div key={med.name} className={`mb-6 p-5 rounded-2xl shadow-xl flex flex-col md:flex-row items-center gap-6 transition-all duration-200 border-2 ${inv && inv.quantity <= 0 ? 'border-red-300 bg-gradient-to-r from-red-50 to-white' : inv && inv.quantity <= inv.minThreshold ? 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-white' : 'border-gray-100 bg-gradient-to-r from-blue-50 to-white'}`}>
-                                <div className="flex flex-col items-center justify-center min-w-[56px]">
-                                  <span className="text-4xl mr-2">💊</span>
-                                  <span className="text-xs text-gray-400 mt-1">Medicine</span>
+                          }
+                          // Quantity in prescription (default 1, but can be extended)
+                          const prescribedQty = 'quantity' in med && typeof (med as any).quantity === 'number' ? (med as any).quantity : 1
+                          return (
+                            <div key={med.name} className={`mb-6 p-5 rounded-2xl shadow-xl flex flex-col md:flex-row items-center gap-6 transition-all duration-200 border-2 ${inv && inv.quantity <= 0 ? 'border-red-300 bg-gradient-to-r from-red-50 to-white' : inv && inv.quantity <= inv.minThreshold ? 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-white' : 'border-gray-100 bg-gradient-to-r from-blue-50 to-white'}`}>
+                              <div className="flex flex-col items-center justify-center min-w-[56px]">
+                                <span className="text-4xl mr-2">💊</span>
+                                <span className="text-xs text-gray-400 mt-1">Medicine</span>
+                              </div>
+                              <div className="flex-1 w-full">
+                                <div className="flex flex-wrap items-center gap-3 mb-2">
+                                  <span className="font-bold text-xl text-gray-900 tracking-wide">{med.name}</span>
+                                  {inv && inv.quantity <= 0 && <span className="text-xs bg-red-200 text-red-800 px-2 py-0.5 rounded">Out of Stock</span>}
+                                  {inv && inv.quantity > 0 && inv.quantity <= inv.minThreshold && <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded">Low Stock</span>}
+                                  {notFound && <span className="text-xs bg-gray-200 text-gray-800 px-2 py-0.5 rounded">Not in Inventory</span>}
                                 </div>
-                                <div className="flex-1 w-full">
-                                  <div className="flex flex-wrap items-center gap-3 mb-2">
-                                    <span className="font-bold text-xl text-gray-900 tracking-wide">{med.name}</span>
-                                    {inv && inv.quantity <= 0 && <span className="text-xs bg-red-200 text-red-800 px-2 py-0.5 rounded">Out of Stock</span>}
-                                    {inv && inv.quantity > 0 && inv.quantity <= inv.minThreshold && <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded">Low Stock</span>}
-                                    {notFound && <span className="text-xs bg-gray-200 text-gray-800 px-2 py-0.5 rounded">Not in Inventory</span>}
-                                  </div>
-                                  <div className="flex flex-wrap gap-6 text-base text-gray-700 mb-3">
-                                    <span><b>Dosage:</b> {med.dosage}</span>
-                                    <span><b>Frequency:</b> {med.frequency}</span>
-                                    <span><b>Duration:</b> {med.duration}</span>
-                                    <span><b>Prescribed:</b> {prescribedQty}</span>
-                                  </div>
-                                  {notFound ? (
-                                    <div className="flex flex-col md:flex-row items-center gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4 mt-2">
-                                      <div className="flex flex-col gap-2 w-full md:w-1/2">
-                                        <span className="text-sm font-medium text-gray-700">Select inventory item:</span>
-                                        <select
-                                          className="border rounded px-2 py-1 w-full"
-                                          value={fallbackInventorySelection[med.name] || ""}
-                                          onChange={e => setFallbackInventorySelection(sel => ({ ...sel, [med.name]: e.target.value }))}
-                                        >
-                                          <option value="">-- Select --</option>
-                                          {allInventory.map(item => (
-                                            <option key={item.id} value={item.id}>
-                                              {item.name} (Quantity: {"quantity" in item && typeof item.quantity === "number" ? item.quantity : 0} {"unit" in item && typeof item.unit === "string" ? item.unit : ""})
-                                            </option>
-                                          ))}
-                                        </select>
-                                        {fallbackInv && (
-                                          <span className="text-xs text-gray-500">Selected: {fallbackInv.name} ({fallbackInv.quantity} {fallbackInv.unit})</span>
-                                        )}
-                                      </div>
+                                <div className="flex flex-wrap gap-6 text-base text-gray-700 mb-3">
+                                  <span><b>Dosage:</b> {med.dosage}</span>
+                                  <span><b>Frequency:</b> {med.frequency}</span>
+                                  <span><b>Duration:</b> {med.duration}</span>
+                                  <span><b>Prescribed:</b> {prescribedQty}</span>
+                                </div>
+                                {notFound ? (
+                                  <div className="flex flex-col md:flex-row items-center gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4 mt-2">
+                                    <div className="flex flex-col gap-2 w-full md:w-1/2">
+                                      <span className="text-sm font-medium text-gray-700">Select inventory item:</span>
+                                      <select
+                                        className="border rounded px-2 py-1 w-full"
+                                        value={fallbackInventorySelection[med.name] || ""}
+                                        onChange={e => setFallbackInventorySelection(sel => ({ ...sel, [med.name]: e.target.value }))}
+                                      >
+                                        <option value="">-- Select --</option>
+                                        {allInventory.map(item => (
+                                          <option key={item.id} value={item.id}>
+                                            {item.name} (Quantity: {"quantity" in item && typeof item.quantity === "number" ? item.quantity : 0} {"unit" in item && typeof item.unit === "string" ? item.unit : ""})
+                                          </option>
+                                        ))}
+                                      </select>
                                       {fallbackInv && (
-                                        <div className="flex flex-col gap-2 w-full md:w-1/2">
-                                          <span className="text-sm font-medium text-gray-700">Quantity to Dispense:</span>
-                                          <input
-                                            type="number"
-                                            min={1}
-                                            max={fallbackInv.quantity}
-                                            value={dispenseQuantities[med.name] || 1}
-                                            onChange={e => {
-                                              const val = Math.max(1, Math.min(fallbackInv.quantity, Number(e.target.value)))
-                                              setDispenseQuantities(q => ({ ...q, [med.name]: val }))
-                                            }}
-                                            className="border-2 border-blue-300 rounded px-3 py-1 w-24 text-lg font-semibold text-blue-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                                          />
-                                          <span className="text-xs text-gray-500">New Stock: <b>{Math.max(0, fallbackInv.quantity - (dispenseQuantities[med.name] || 1))} {fallbackInv.unit}</b></span>
-                                        </div>
+                                        <span className="text-xs text-gray-500">Selected: {fallbackInv.name} ({fallbackInv.quantity} {fallbackInv.unit})</span>
                                       )}
                                     </div>
-                                  ) : (
-                                    <div className="flex flex-wrap items-center gap-6 text-base mt-2">
-                                      <span className="bg-blue-50 px-3 py-1 rounded border border-blue-100">Current Stock: <b>{inv && "quantity" in inv ? inv.quantity : "N/A"} {inv && "unit" in inv ? inv.unit : ""}</b></span>
-                                      <label className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded border border-gray-200 focus-within:ring-2 focus-within:ring-blue-200">
-                                        <span className="font-medium">Quantity to Reduce:</span>
+                                    {fallbackInv && (
+                                      <div className="flex flex-col gap-2 w-full md:w-1/2">
+                                        <span className="text-sm font-medium text-gray-700">Quantity to Dispense:</span>
                                         <input
                                           type="number"
                                           min={1}
-                                          max={inv && "quantity" in inv ? inv.quantity : 1}
+                                          max={fallbackInv.quantity}
                                           value={dispenseQuantities[med.name] || 1}
                                           onChange={e => {
-                                            const val = Math.max(1, Math.min(inv && "quantity" in inv ? inv.quantity : 1, Number(e.target.value)))
+                                            const val = Math.max(1, Math.min(fallbackInv.quantity, Number(e.target.value)))
                                             setDispenseQuantities(q => ({ ...q, [med.name]: val }))
                                           }}
-                                          className="ml-1 border-2 border-blue-300 rounded px-3 py-1 w-20 text-lg font-semibold text-blue-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                                          className="border-2 border-blue-300 rounded px-3 py-1 w-24 text-lg font-semibold text-blue-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
                                         />
-                                      </label>
-                                      <span className="bg-green-50 px-3 py-1 rounded border border-green-100">New Stock: <b>{inv && "quantity" in inv ? Math.max(0, inv.quantity - (dispenseQuantities[med.name] || 1)) : "-"} {inv && "unit" in inv ? inv.unit : ""}</b></span>
-                                    </div>
-                                  )}
-                                </div>
+                                        <span className="text-xs text-gray-500">New Stock: <b>{Math.max(0, fallbackInv.quantity - (dispenseQuantities[med.name] || 1))} {fallbackInv.unit}</b></span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-wrap items-center gap-6 text-base mt-2">
+                                    <span className="bg-blue-50 px-3 py-1 rounded border border-blue-100">Current Stock: <b>{inv && "quantity" in inv ? inv.quantity : "N/A"} {inv && "unit" in inv ? inv.unit : ""}</b></span>
+                                    <label className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded border border-gray-200 focus-within:ring-2 focus-within:ring-blue-200">
+                                      <span className="font-medium">Quantity to Reduce:</span>
+                                      <input
+                                        type="number"
+                                        min={1}
+                                        max={inv && "quantity" in inv ? inv.quantity : 1}
+                                        value={dispenseQuantities[med.name] || 1}
+                                        onChange={e => {
+                                          const val = Math.max(1, Math.min(inv && "quantity" in inv ? inv.quantity : 1, Number(e.target.value)))
+                                          setDispenseQuantities(q => ({ ...q, [med.name]: val }))
+                                        }}
+                                        className="ml-1 border-2 border-blue-300 rounded px-3 py-1 w-20 text-lg font-semibold text-blue-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                                      />
+                                    </label>
+                                    <span className="bg-green-50 px-3 py-1 rounded border border-green-100">New Stock: <b>{inv && "quantity" in inv ? Math.max(0, inv.quantity - (dispenseQuantities[med.name] || 1)) : "-"} {inv && "unit" in inv ? inv.unit : ""}</b></span>
+                                  </div>
+                                )}
                               </div>
-                            )
-                          })}
-                          <Button onClick={handleApproveConfirm} className="w-full mt-2">Confirm & Approve</Button>
-                        </DialogContent>
-                      </Dialog>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" className="flex-1">
+                            </div>
+                          )
+                        })}
+                        <Button onClick={handleApproveConfirm} className="w-full mt-2">Confirm & Approve</Button>
+                      </DialogContent>
+                    </Dialog>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="flex-1">
                         <X className="mr-2 h-4 w-4" />
                         Reject
                       </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Reject Prescription</DialogTitle>
-                            <DialogDescription>Enter a note for rejection</DialogDescription>
-                          </DialogHeader>
-                          <Textarea
-                            placeholder="Enter rejection reason..."
-                            value={rejectionNote}
-                            onChange={e => setRejectionNote(e.target.value)}
-                          />
-                          <Button
-                            variant="destructive"
-                            onClick={() => {
-                              handleStatusChange(prescription.id, "rejected", rejectionNote)
-                              setRejectionNote("")
-                            }}
-                          >
-                            Confirm Reject
-                          </Button>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  )}
-                </div>
+                      </DialogTrigger>
+                      <DialogContent className="glass-card bg-card backdrop-blur-xl shadow-lg">
+                        <DialogHeader>
+                          <DialogTitle>Reject Prescription</DialogTitle>
+                          <DialogDescription>Enter a note for rejection</DialogDescription>
+                        </DialogHeader>
+                        <Textarea
+                          placeholder="Enter rejection reason..."
+                          value={rejectionNote}
+                          onChange={e => setRejectionNote(e.target.value)}
+                        />
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            handleStatusChange(prescription.id, "rejected", rejectionNote)
+                            setRejectionNote("")
+                          }}
+                        >
+                          Confirm Reject
+                        </Button>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
 
         {filteredPrescriptions.length === 0 && (
-          <Card>
+          <Card className="glass-card bg-red-50/60 dark:bg-red-900/40 backdrop-blur-xl shadow-lg">
             <CardContent className="pt-6">
               <div className="text-center py-8">
                 <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -819,7 +797,7 @@ function AddPrescriptionForm({
         </div>
 
         {formData.medicines.map((medicine, index) => (
-          <Card key={index}>
+          <Card key={index} className="glass-card bg-card backdrop-blur-xl shadow-lg">
             <CardContent className="pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">

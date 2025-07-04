@@ -134,46 +134,46 @@ export default function NurseDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Nurse Dashboard</h1>
-        <p className="text-muted-foreground">Patient care and nursing management</p>
+        <h1 className="text-3xl font-bold text-foreground dark:text-white">Nurse Dashboard</h1>
+        <p className="text-muted-foreground dark:text-gray-300">Patient care and nursing management</p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-foreground">Total Patients</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg"><Users className="h-4 w-4 text-blue-600 dark:text-blue-300" /></div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{patients.length}</div>
             <p className="text-xs text-muted-foreground">All patients</p>
           </CardContent>
         </Card>
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-foreground">Critical Patients</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg"><AlertCircle className="h-4 w-4 text-red-600 dark:text-red-300" /></div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600 dark:text-red-300">{criticalPatients.length}</div>
             <p className="text-xs text-muted-foreground">Need attention</p>
           </CardContent>
         </Card>
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-foreground">Medicine Reminders</CardTitle>
-            <Bell className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg"><Bell className="h-4 w-4 text-yellow-600 dark:text-yellow-300" /></div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{activeReminders.length}</div>
             <p className="text-xs text-muted-foreground">Active Reminders</p>
           </CardContent>
         </Card>
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-foreground">Notes Added</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg"><FileText className="h-4 w-4 text-purple-600 dark:text-purple-300" /></div>
           </CardHeader>
           <CardContent>
             {/* You can fetch and count notes for this nurse if needed */}
@@ -187,7 +187,7 @@ export default function NurseDashboard() {
       <AIQuickInsights patients={patients} />
 
       {/* Medicine Reminders - Enhanced Version */}
-      <Card className="bg-card">
+      <Card className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
         <CardHeader>
           <CardTitle className="flex items-center text-foreground">
             <Bell className="mr-2 h-5 w-5" />
@@ -255,7 +255,7 @@ export default function NurseDashboard() {
       </Card>
 
       {/* Patient List */}
-      <Card className="bg-card">
+      <Card className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
         <CardHeader>
           <CardTitle className="text-foreground">All Patients</CardTitle>
           <CardDescription className="text-muted-foreground">All patients under your care</CardDescription>
@@ -266,60 +266,62 @@ export default function NurseDashboard() {
               const notes = (patient as any).notes as any[] | undefined;
               const safeNotes = notes ?? [];
               return (
-                <div key={patient.id} className="border rounded-lg p-4 bg-white dark:bg-gray-900">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h3 className="font-medium text-foreground">{patient.name}</h3>
-                      <p className="text-sm text-muted-foreground">{patient.diagnosis}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Age: {patient.age} • Bed: {patient.assignedBed}
-                      </p>
-                    </div>
-                    <Badge
-                      variant={
-                        patient.status === "critical"
-                          ? "destructive"
-                          : patient.status === "admitted"
-                          ? "default"
-                          : "secondary"
-                      }
-                    >
-                      {patient.status}
-                    </Badge>
-                  </div>
-
-                  {/* Nursing Chart */}
-                  <div className="mb-3">
-                    <ResponsiveContainer width="100%" height={120}>
-                      <LineChart data={getChartData(patient)}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* Nursing Notes */}
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-sm">Latest Nursing Note</h4>
-                    {safeNotes.length > 0 ? (
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm text-gray-600 bg-blue-50 p-2 rounded flex-1">
-                            {safeNotes[safeNotes.length - 1].content}
-                            <span className="text-xs text-gray-400"> - {safeNotes[safeNotes.length - 1].nurseName}</span>
-                            <span className="text-xs text-gray-400 ml-2">{new Date(safeNotes[safeNotes.length - 1].timestamp).toLocaleString()}</span>
-                          </p>
+                <Card key={patient.id} className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
+                  <CardContent className="p-6 flex flex-col gap-4">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{patient.name}</h3>
+                        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                          <span>{patient.diagnosis}</span>
+                          <span>Age: {patient.age}</span>
+                          <span>Bed: {patient.assignedBed}</span>
                         </div>
                       </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">No notes yet</p>
-                    )}
-                    <p className="text-xs text-blue-600 mt-2">For full note management, visit the Nursing Notes section.</p>
-                  </div>
-                </div>
+                      <Badge
+                        variant={
+                          patient.status === "critical"
+                            ? "destructive"
+                            : patient.status === "admitted"
+                            ? "default"
+                            : "secondary"
+                        }
+                        className="text-base px-4 py-1"
+                      >
+                        {patient.status}
+                      </Badge>
+                    </div>
+                    {/* Chart */}
+                    <div className="mb-3">
+                      <ResponsiveContainer width="100%" height={120}>
+                        <LineChart data={getChartData(patient)}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    {/* Latest Nursing Note */}
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm text-gray-900 dark:text-white">Latest Nursing Note</h4>
+                      {safeNotes.length > 0 ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm bg-blue-50 dark:bg-blue-900/40 text-gray-900 dark:text-gray-100 p-3 rounded-lg flex-1">
+                              {safeNotes[safeNotes.length - 1].content}
+                              <span className="text-xs text-gray-400 ml-2">- {safeNotes[safeNotes.length - 1].nurseName}</span>
+                              <span className="text-xs text-gray-400 ml-2">{new Date(safeNotes[safeNotes.length - 1].timestamp).toLocaleString()}</span>
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">No notes yet</p>
+                      )}
+                      <p className="text-xs text-blue-600 mt-2">For full note management, visit the Nursing Notes section.</p>
+                    </div>
+                  </CardContent>
+                </Card>
               )
             })}
           </div>
@@ -327,7 +329,7 @@ export default function NurseDashboard() {
       </Card>
 
       {/* Quick Actions */}
-      <Card className="bg-card">
+      <Card className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
         <CardHeader>
           <CardTitle className="text-foreground">Quick Actions</CardTitle>
           <CardDescription className="text-muted-foreground">Common nursing tasks</CardDescription>

@@ -30,7 +30,7 @@ import { askGeminiServer } from "@/lib/gemini"
 export default function PatientsPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { role } = React.use(params)
+  const [role, setRole] = useState<string>("");
   const [patients, setPatients] = useState<Patient[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -47,6 +47,13 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
   const [doctors, setDoctors] = useState<Staff[]>([])
   const [summary, setSummary] = useState<string | null>(null)
   const [loadingSummary, setLoadingSummary] = useState(false)
+
+  useEffect(() => {
+    (async () => {
+      const resolvedParams = await params;
+      setRole(resolvedParams.role);
+    })();
+  }, [params]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -243,292 +250,292 @@ Use clear, professional language without any special formatting characters.`;
   return (
     <DashboardLayout role={role}>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {role === "doctor" ? "My Patients" : role === "nurse" ? "Assigned Patients" : "Patient Management"}
-            </h1>
-            <p className="text-gray-600">
-              {role === "doctor"
-                ? "Patients under your care"
-                : role === "nurse"
-                  ? "Patients assigned to you"
-                  : "Manage hospital patients"}
-            </p>
-          </div>
-          {(role === "receptionist" || role === "doctor") && (
-            <Dialog open={showAddPatient} onOpenChange={setShowAddPatient}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Patient
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Add New Patient</DialogTitle>
-                  <DialogDescription>Enter patient information for registration</DialogDescription>
-                </DialogHeader>
-                <AddPatientForm onSubmit={handleAddPatient} onCancel={() => setShowAddPatient(false)} doctors={doctors} />
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-
-        {/* Filters */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search patients by name, diagnosis, or phone..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+          <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {role === "doctor" ? "My Patients" : role === "nurse" ? "Assigned Patients" : "Patient Management"}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {role === "doctor"
+                    ? "Patients under your care"
+                    : role === "nurse"
+                      ? "Patients assigned to you"
+                      : "Manage hospital patients"}
+                </p>
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Patients</SelectItem>
-                  <SelectItem value="admitted">Admitted</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
-                  <SelectItem value="discharged">Discharged</SelectItem>
-                </SelectContent>
-              </Select>
+              {(role === "receptionist" || role === "doctor") && (
+                <Dialog open={showAddPatient} onOpenChange={setShowAddPatient}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Patient
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl glass-card bg-card backdrop-blur-xl shadow-lg">
+                    <DialogHeader>
+                      <DialogTitle>Add New Patient</DialogTitle>
+                      <DialogDescription>Enter patient information for registration</DialogDescription>
+                    </DialogHeader>
+                    <AddPatientForm onSubmit={handleAddPatient} onCancel={() => setShowAddPatient(false)} doctors={doctors} />
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Patient Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Heart className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Patients</p>
-                  <p className="text-2xl font-bold">{filteredPatients.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Activity className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Admitted</p>
-                  <p className="text-2xl font-bold">{filteredPatients.filter((p) => p.status === "admitted").length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <Activity className="h-6 w-6 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Critical</p>
-                  <p className="text-2xl font-bold">{filteredPatients.filter((p) => p.status === "critical").length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-gray-100 rounded-lg">
-                  <Activity className="h-6 w-6 text-gray-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Discharged</p>
-                  <p className="text-2xl font-bold">
-                    {filteredPatients.filter((p) => p.status === "discharged").length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Patient List */}
-        <div className="grid gap-6">
-          {filteredPatients.map((patient) => (
-            <Card key={patient.id} className="hover:shadow-md transition-shadow">
+            {/* Filters */}
+            <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
               <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col md:flex-row gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <h3 className="text-xl font-semibold">{patient.name}</h3>
-                      <Badge
-                        variant={
-                          patient.status === "critical"
-                            ? "destructive"
-                            : patient.status === "admitted"
-                              ? "default"
-                              : "secondary"
-                        }
-                      >
-                        {patient.status}
-                      </Badge>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search patients by name, diagnosis, or phone..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Calendar className="mr-2 h-4 w-4" />
-                          Age: {patient.age} • {patient.gender}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Phone className="mr-2 h-4 w-4" />
-                          {patient.phone}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="mr-2 h-4 w-4" />
-                          Bed: {patient.assignedBed || "Not assigned"}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-900">Diagnosis</p>
-                        <p className="text-sm text-gray-600">{patient.diagnosis}</p>
-                        <p className="text-sm text-gray-600">Dr. {patient.assignedDoctor}</p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-900">Vitals</p>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>BP: {patient.vitals?.bloodPressure ?? "N/A"}</div>
-                          <div>HR: {patient.vitals?.heartRate ?? "N/A"} bpm</div>
-                          <div>Temp: {patient.vitals?.temperature ?? "N/A"}°F</div>
-                          <div>O2: {patient.vitals?.oxygenSaturation ?? "N/A"}%</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {(patient.history?.length ?? 0) > 0 && (
-                      <div className="mb-4">
-                        <p className="text-sm font-medium text-gray-900 mb-1">Medical History</p>
-                        <div className="space-y-1">
-                          {patient.history.slice(0, 2).map((item, index) => (
-                            <p key={index} className="text-sm text-gray-600">
-                              • {item}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
-
-                  <div className="flex flex-col gap-2 ml-4">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" onClick={() => { setSelectedPatient(patient); setShowAddNote(true); }}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                        <PatientDetailsModal patient={patient} role={role} onUpdateHistory={async (updatedHistory) => {
-                          if (!db) return;
-                          await setDoc(doc(db, "patients", patient.id), { history: updatedHistory }, { merge: true });
-                          setPatients(patients.map((p) => (p.id === patient.id ? { ...p, history: updatedHistory } : p)));
-                        }} />
-                      </DialogContent>
-                    </Dialog>
-
-                    {role === "doctor" && (
-                      <>
-                        <Button variant="outline" size="sm" onClick={() => { setEditPatientData(patient); setShowEditPatient(true); }}>
-                          Edit
-                        </Button>
-                        {patient.status !== "discharged" && (
-                          <Button variant="outline" size="sm" onClick={() => { setDischargePatientId(patient.id); setShowDischargeConfirm(true); }}>
-                            Discharge
-                          </Button>
-                        )}
-                        <Button variant="outline" size="sm" onClick={() => { setNotePatient(patient); setShowAddNote(true); }}>
-                          Add Note
-                        </Button>
-                      </>
-                    )}
-                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full md:w-48">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Patients</SelectItem>
+                      <SelectItem value="admitted">Admitted</SelectItem>
+                      <SelectItem value="critical">Critical</SelectItem>
+                      <SelectItem value="discharged">Discharged</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
 
-        {filteredPatients.length === 0 && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-8">
-                <Heart className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No patients found</h3>
-                <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+            {/* Patient Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Heart className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Patients</p>
+                      <p className="text-2xl font-bold">{filteredPatients.length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Activity className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Admitted</p>
+                      <p className="text-2xl font-bold">{filteredPatients.filter((p) => p.status === "admitted").length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <Activity className="h-6 w-6 text-red-600" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Critical</p>
+                      <p className="text-2xl font-bold">{filteredPatients.filter((p) => p.status === "critical").length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-gray-100 rounded-lg">
+                      <Activity className="h-6 w-6 text-gray-600" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Discharged</p>
+                      <p className="text-2xl font-bold">
+                        {filteredPatients.filter((p) => p.status === "discharged").length}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-        {showEditPatient && editPatientData && (
-          <Dialog open={showEditPatient} onOpenChange={setShowEditPatient}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Edit Patient</DialogTitle>
-              </DialogHeader>
-              <AddPatientForm
-                onSubmit={(data) => handleEditPatient({ ...editPatientData, ...data })}
-                onCancel={() => setShowEditPatient(false)}
-                initialData={editPatientData}
-                doctors={doctors}
-              />
-            </DialogContent>
-          </Dialog>
-        )}
+            {/* Patient List */}
+            <div className="grid gap-6">
+              {filteredPatients.map((patient) => (
+                <Card key={patient.id} className="hover:shadow-md transition-shadow glass-card bg-card backdrop-blur-xl shadow-lg">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{patient.name}</h3>
+                          <Badge
+                            variant={
+                              patient.status === "critical"
+                                ? "destructive"
+                                : patient.status === "admitted"
+                                  ? "default"
+                                  : "secondary"
+                            }
+                          >
+                            {patient.status}
+                          </Badge>
+                        </div>
 
-        {showDischargeConfirm && dischargePatientId && (
-          <Dialog open={showDischargeConfirm} onOpenChange={setShowDischargeConfirm}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Discharge Patient</DialogTitle>
-                <DialogDescription>Are you sure you want to discharge this patient?</DialogDescription>
-              </DialogHeader>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowDischargeConfirm(false)}>Cancel</Button>
-                <Button variant="destructive" onClick={() => handleDischargePatient(dischargePatientId)}>Discharge</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                              <Calendar className="mr-2 h-4 w-4" />
+                              Age: {patient.age} • {patient.gender}
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                              <Phone className="mr-2 h-4 w-4" />
+                              {patient.phone}
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                              <MapPin className="mr-2 h-4 w-4" />
+                              Bed: {patient.assignedBed || "Not assigned"}
+                            </div>
+                          </div>
 
-        {showAddNote && notePatient && (
-          <Dialog open={showAddNote} onOpenChange={setShowAddNote}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Note for {notePatient.name}</DialogTitle>
-              </DialogHeader>
-              <Textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} placeholder="Enter note..." />
-              <div className="flex justify-end gap-2 mt-2">
-                <Button variant="outline" onClick={() => setShowAddNote(false)}>Cancel</Button>
-                <Button onClick={handleAddNote} disabled={!noteContent.trim()}>Add Note</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">Diagnosis</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{patient.diagnosis}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Dr. {patient.assignedDoctor}</p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">Vitals</p>
+                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-900 dark:text-white">
+                              <div>BP: {patient.vitals?.bloodPressure ?? "N/A"}</div>
+                              <div>HR: {patient.vitals?.heartRate ?? "N/A"} bpm</div>
+                              <div>Temp: {patient.vitals?.temperature ?? "N/A"}°F</div>
+                              <div>O2: {patient.vitals?.oxygenSaturation ?? "N/A"}%</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {(patient.history?.length ?? 0) > 0 && (
+                          <div className="mb-4">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">Medical History</p>
+                            <div className="space-y-1">
+                              {patient.history.slice(0, 2).map((item, index) => (
+                                <p key={index} className="text-sm text-gray-600 dark:text-gray-300">
+                                  • {item}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-2 ml-4">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => { setSelectedPatient(patient); setShowAddNote(true); }}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto glass-card bg-card backdrop-blur-xl shadow-lg">
+                            <PatientDetailsModal patient={patient} role={role} onUpdateHistory={async (updatedHistory) => {
+                              if (!db) return;
+                              await setDoc(doc(db, "patients", patient.id), { history: updatedHistory }, { merge: true });
+                              setPatients(patients.map((p) => (p.id === patient.id ? { ...p, history: updatedHistory } : p)));
+                            }} />
+                          </DialogContent>
+                        </Dialog>
+
+                        {role === "doctor" && (
+                          <>
+                            <Button variant="outline" size="sm" onClick={() => { setEditPatientData(patient); setShowEditPatient(true); }}>
+                              Edit
+                            </Button>
+                            {patient.status !== "discharged" && (
+                              <Button variant="outline" size="sm" onClick={() => { setDischargePatientId(patient.id); setShowDischargeConfirm(true); }}>
+                                Discharge
+                              </Button>
+                            )}
+                            <Button variant="outline" size="sm" onClick={() => { setNotePatient(patient); setShowAddNote(true); }}>
+                              Add Note
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {filteredPatients.length === 0 && (
+              <Card className="glass-card bg-red-50/60 dark:bg-red-900/40 backdrop-blur-xl shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="text-center py-8">
+                    <Heart className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No patients found</h3>
+                    <p className="text-gray-600 dark:text-gray-300">Try adjusting your search or filter criteria.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {showEditPatient && editPatientData && (
+              <Dialog open={showEditPatient} onOpenChange={setShowEditPatient}>
+                <DialogContent className="max-w-2xl glass-card bg-card backdrop-blur-xl shadow-lg">
+                  <DialogHeader>
+                    <DialogTitle>Edit Patient</DialogTitle>
+                  </DialogHeader>
+                  <AddPatientForm
+                    onSubmit={(data) => handleEditPatient({ ...editPatientData, ...data })}
+                    onCancel={() => setShowEditPatient(false)}
+                    initialData={editPatientData}
+                    doctors={doctors}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {showDischargeConfirm && dischargePatientId && (
+              <Dialog open={showDischargeConfirm} onOpenChange={setShowDischargeConfirm}>
+                <DialogContent className="glass-card bg-card backdrop-blur-xl shadow-lg">
+                  <DialogHeader>
+                    <DialogTitle>Discharge Patient</DialogTitle>
+                    <DialogDescription>Are you sure you want to discharge this patient?</DialogDescription>
+                  </DialogHeader>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowDischargeConfirm(false)}>Cancel</Button>
+                    <Button variant="destructive" onClick={() => handleDischargePatient(dischargePatientId)}>Discharge</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {showAddNote && notePatient && (
+              <Dialog open={showAddNote} onOpenChange={setShowAddNote}>
+                <DialogContent className="glass-card bg-card backdrop-blur-xl shadow-lg">
+                  <DialogHeader>
+                    <DialogTitle>Add Note for {notePatient.name}</DialogTitle>
+                  </DialogHeader>
+                  <Textarea value={noteContent} onChange={e => setNoteContent(e.target.value)} placeholder="Enter note..." />
+                  <div className="flex justify-end gap-2 mt-2">
+                    <Button variant="outline" onClick={() => setShowAddNote(false)}>Cancel</Button>
+                    <Button onClick={handleAddNote} disabled={!noteContent.trim()}>Add Note</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
     </DashboardLayout>
   )
 }
@@ -815,7 +822,7 @@ Use clear, professional language without any special formatting characters.`;
   return (
     <div className="space-y-6">
       <DialogHeader>
-        <DialogTitle className="flex items-center gap-3">
+        <DialogTitle className="flex items-center gap-3 text-gray-900 dark:text-white">
           {patient.name}
           <Badge
             variant={
@@ -825,8 +832,17 @@ Use clear, professional language without any special formatting characters.`;
             {patient.status}
           </Badge>
         </DialogTitle>
-        <DialogDescription>
-          Patient ID: {patient.id} • Admitted: {patient.admissionDate ? patient.admissionDate.toLocaleDateString() : "N/A"}
+        <DialogDescription className="text-gray-600 dark:text-gray-300">
+          Patient ID: {patient.id} • Admitted: {(() => {
+            const d = patient.admissionDate
+              ? (typeof patient.admissionDate === "string"
+                  ? new Date(patient.admissionDate)
+                  : (typeof patient.admissionDate === "object" && typeof (patient.admissionDate as any).toDate === "function")
+                    ? (patient.admissionDate as any).toDate()
+                    : patient.admissionDate)
+              : null;
+            return d ? d.toLocaleDateString() : "N/A";
+          })()}
         </DialogDescription>
       </DialogHeader>
 
@@ -836,7 +852,7 @@ Use clear, professional language without any special formatting characters.`;
           {loadingSummary ? "Generating..." : "Generate Health Summary (AI)"}
         </Button>
         {summary && (
-          <div className="mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded text-gray-900 whitespace-pre-line">
+          <div className="mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded text-gray-900 dark:text-white whitespace-pre-line">
             {summary}
           </div>
         )}
@@ -846,7 +862,7 @@ Use clear, professional language without any special formatting characters.`;
         <>
           <Button onClick={() => setShowAddBill(true)} className="mb-2">Add Manual Bill</Button>
           <Dialog open={showAddBill} onOpenChange={setShowAddBill}>
-            <DialogContent>
+            <DialogContent className="glass-card bg-card backdrop-blur-xl shadow-lg">
               <DialogHeader>
                 <DialogTitle>Add Manual Bill</DialogTitle>
                 <DialogDescription>Enter details for the new billable service.</DialogDescription>
@@ -885,90 +901,90 @@ Use clear, professional language without any special formatting characters.`;
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader>
-            <CardTitle className="text-lg">Personal Information</CardTitle>
+            <CardTitle className="text-lg text-gray-900 dark:text-white">Personal Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 text-gray-900 dark:text-white">
             <div>
-              <p className="text-sm font-medium text-gray-600">Age & Gender</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Age & Gender</p>
               <p>
                 {patient.age} years old • {patient.gender}
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Phone</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Phone</p>
               <p>{patient.phone}</p>
             </div>
             {patient.email && (
               <div>
-                <p className="text-sm font-medium text-gray-600">Email</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Email</p>
                 <p>{patient.email}</p>
               </div>
             )}
             <div>
-              <p className="text-sm font-medium text-gray-600">Address</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Address</p>
               <p>{patient.address}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader>
-            <CardTitle className="text-lg">Medical Information</CardTitle>
+            <CardTitle className="text-lg text-gray-900 dark:text-white">Medical Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 text-gray-900 dark:text-white">
             <div>
-              <p className="text-sm font-medium text-gray-600">Diagnosis</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Diagnosis</p>
               <p>{patient.diagnosis}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Assigned Doctor</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Assigned Doctor</p>
               <p>{patient.assignedDoctor}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Bed Assignment</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Bed Assignment</p>
               <p>{patient.assignedBed || "Not assigned"}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
         <CardHeader>
-          <CardTitle className="text-lg">Current Vitals</CardTitle>
+          <CardTitle className="text-lg text-gray-900 dark:text-white">Current Vitals</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm font-medium text-blue-600">Blood Pressure</p>
-              <p className="text-lg font-bold">{patient.vitals?.bloodPressure ?? "N/A"}</p>
+            <div className="text-center p-3 bg-blue-50 dark:bg-blue-900 rounded-lg">
+              <p className="text-sm font-medium text-blue-600 dark:text-blue-300">Blood Pressure</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">{patient.vitals?.bloodPressure ?? "N/A"}</p>
             </div>
-            <div className="text-center p-3 bg-green-50 rounded-lg">
-              <p className="text-sm font-medium text-green-600">Heart Rate</p>
-              <p className="text-lg font-bold">{patient.vitals?.heartRate ?? "N/A"} bpm</p>
+            <div className="text-center p-3 bg-green-50 dark:bg-green-900 rounded-lg">
+              <p className="text-sm font-medium text-green-600 dark:text-green-300">Heart Rate</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">{patient.vitals?.heartRate ?? "N/A"} bpm</p>
             </div>
-            <div className="text-center p-3 bg-orange-50 rounded-lg">
-              <p className="text-sm font-medium text-orange-600">Temperature</p>
-              <p className="text-lg font-bold">{patient.vitals?.temperature ?? "N/A"}°F</p>
+            <div className="text-center p-3 bg-orange-50 dark:bg-orange-900 rounded-lg">
+              <p className="text-sm font-medium text-orange-600 dark:text-orange-300">Temperature</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">{patient.vitals?.temperature ?? "N/A"}°F</p>
             </div>
-            <div className="text-center p-3 bg-purple-50 rounded-lg">
-              <p className="text-sm font-medium text-purple-600">O2 Saturation</p>
-              <p className="text-lg font-bold">{patient.vitals?.oxygenSaturation ?? "N/A"}%</p>
+            <div className="text-center p-3 bg-purple-50 dark:bg-purple-900 rounded-lg">
+              <p className="text-sm font-medium text-purple-600 dark:text-purple-300">O2 Saturation</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">{patient.vitals?.oxygenSaturation ?? "N/A"}%</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {patient.history?.length > 0 && (
-        <Card>
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader>
-            <CardTitle className="text-lg">Medical History</CardTitle>
+            <CardTitle className="text-lg text-gray-900 dark:text-white">Medical History</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
               {patient.history.map((item, index) => (
-                <li key={index} className="flex items-start gap-2">
+                <li key={index} className="flex items-start gap-2 text-gray-900 dark:text-white">
                   <span className="text-gray-400 mr-2">•</span>
                   {role === "doctor" && editingHistoryIndex === index ? (
                     <>
@@ -1002,14 +1018,14 @@ Use clear, professional language without any special formatting characters.`;
       )}
 
       {patient.nursingNotes && patient.nursingNotes.length > 0 && (
-        <Card>
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader>
-            <CardTitle className="text-lg">Nursing Notes</CardTitle>
+            <CardTitle className="text-lg text-gray-900 dark:text-white">Nursing Notes</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {patient.nursingNotes.map((note, index) => (
-                <div key={index} className="p-3 bg-blue-50 rounded-lg">
+                <div key={index} className="p-3 bg-blue-50 dark:bg-blue-900 rounded-lg text-gray-900 dark:text-white">
                   <p className="text-sm">{typeof note === "string" ? note : note.content}</p>
                 </div>
               ))}
@@ -1022,13 +1038,13 @@ Use clear, professional language without any special formatting characters.`;
 
       {/* --- Bills & Payments section for Receptionist --- */}
       {role === "receptionist" && (
-        <Card>
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader>
-            <CardTitle className="text-lg">Bills & Payments</CardTitle>
+            <CardTitle className="text-lg text-gray-900 dark:text-white">Bills & Payments</CardTitle>
           </CardHeader>
           <CardContent>
             {/* Outstanding Balance */}
-            <div className="mb-4">
+            <div className="mb-4 text-gray-900 dark:text-white">
               <span className="font-semibold">Outstanding Balance: </span>
               <span className="text-red-600 font-bold">
                 ₹{Array.isArray(patient.bills)
@@ -1040,7 +1056,7 @@ Use clear, professional language without any special formatting characters.`;
             {Array.isArray(patient.bills) && patient.bills?.length > 0 ? (
               <div className="space-y-4">
                 {patient.bills?.map((bill: any, idx: number) => (
-                  <div key={bill.id || idx} className="border rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                  <div key={bill.id || idx} className="border rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-gray-900 dark:text-white">
                     <div>
                       <div className="font-semibold">Date: {bill.date ? new Date(bill.date).toLocaleDateString() : "N/A"}</div>
                       <div className="text-sm text-gray-600">Status: 
@@ -1125,7 +1141,7 @@ Use clear, professional language without any special formatting characters.`;
 
       {/* Edit Bill Dialog */}
       <Dialog open={editBillIdx !== null} onOpenChange={open => { if (!open) setEditBillIdx(null); }}>
-        <DialogContent>
+        <DialogContent className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <DialogHeader>
             <DialogTitle>Edit Bill</DialogTitle>
             <DialogDescription>Update the bill details.</DialogDescription>
@@ -1158,7 +1174,7 @@ Use clear, professional language without any special formatting characters.`;
 
       {/* Delete Bill Confirmation Dialog */}
       <Dialog open={showDeleteBillIdx !== null} onOpenChange={open => { if (!open) setShowDeleteBillIdx(null); }}>
-        <DialogContent>
+        <DialogContent className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <DialogHeader>
             <DialogTitle>Delete Bill</DialogTitle>
             <DialogDescription>Are you sure you want to delete this bill?</DialogDescription>

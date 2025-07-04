@@ -329,8 +329,8 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Healthcare Analytics</h1>
-            <p className="text-gray-600">AI-powered insights and performance metrics</p>
+            <h1 className="text-3xl font-bold text-foreground">Healthcare Analytics</h1>
+            <p className="text-muted-foreground">AI-powered insights and performance metrics</p>
           </div>
           <div className="flex items-center space-x-4">
             <Select value={timeRange} onValueChange={setTimeRange}>
@@ -352,7 +352,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
         {/* Key Performance Indicators */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
+          <Card className="bg-white dark:bg-black z-10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -365,7 +365,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
             </CardContent>
           </Card>
 
-          <Card className="glass-card bg-background backdrop-blur-xl shadow">
+          <Card className="bg-white dark:bg-black z-10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Occupancy Rate</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
@@ -378,7 +378,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
             </CardContent>
           </Card>
 
-          <Card className="glass-card bg-background backdrop-blur-xl shadow">
+          <Card className="bg-white dark:bg-black z-10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Staff Efficiency</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -391,7 +391,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
             </CardContent>
           </Card>
 
-          <Card className="glass-card bg-background backdrop-blur-xl shadow">
+          <Card className="bg-white dark:bg-black z-10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Quality Score</CardTitle>
               <Heart className="h-4 w-4 text-muted-foreground" />
@@ -406,8 +406,8 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
         </div>
 
         {/* AI Insights Section */}
-        <Card>
-          <CardHeader>
+        <Card className="bg-white dark:bg-black z-10">
+          <CardHeader className="bg-white dark:bg-black text-foreground dark:text-white z-20">
             <CardTitle className="flex items-center">
               <Brain className="mr-2 h-5 w-5" />
               AI-Powered Insights
@@ -416,7 +416,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
               Intelligent recommendations and predictions based on current data
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="bg-white dark:bg-black text-foreground dark:text-white z-20">
             {loadingInsights ? (
               <div className="space-y-3">
                 {[1, 2, 3].map(i => (
@@ -432,7 +432,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-medium text-gray-900">{insight.title}</p>
+                        <p className="text-sm font-medium text-foreground dark:text-white">{insight.title}</p>
                         <div className="flex items-center space-x-2">
                           <Badge variant={getPriorityColor(insight.priority)}>
                             {insight.priority}
@@ -440,8 +440,8 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                           <Badge variant="outline">{insight.confidence}% confidence</Badge>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600">{insight.description}</p>
-                      <p className="text-xs text-gray-500 mt-1">Category: {insight.category}</p>
+                      <p className="text-sm text-foreground dark:text-white">{insight.description}</p>
+                      <p className="text-xs text-foreground dark:text-white mt-1">Category: {insight.category}</p>
                     </div>
                   </div>
                 ))}
@@ -452,17 +452,19 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
         {/* Charts and Visualizations */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="patients">Patients</TabsTrigger>
-            <TabsTrigger value="operations">Operations</TabsTrigger>
-            <TabsTrigger value="quality">Quality</TabsTrigger>
-            <TabsTrigger value="predictions">Predictions</TabsTrigger>
-          </TabsList>
+          <Card className="bg-white dark:bg-black shadow rounded mb-4 z-10">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="patients">Patients</TabsTrigger>
+              <TabsTrigger value="operations">Operations</TabsTrigger>
+              <TabsTrigger value="quality">Quality</TabsTrigger>
+              <TabsTrigger value="predictions">Predictions</TabsTrigger>
+            </TabsList>
+          </Card>
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+              <Card className="bg-white dark:bg-black z-10">
                 <CardHeader>
                   <CardTitle>Patient Flow Trends</CardTitle>
                 </CardHeader>
@@ -480,7 +482,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-white dark:bg-black z-10">
                 <CardHeader>
                   <CardTitle>Risk Distribution</CardTitle>
                 </CardHeader>
@@ -510,7 +512,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
           <TabsContent value="patients" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+              <Card className="bg-white dark:bg-black z-10">
                 <CardHeader>
                   <CardTitle>Department Utilization</CardTitle>
                 </CardHeader>
@@ -528,7 +530,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-white dark:bg-black z-10">
                 <CardHeader>
                   <CardTitle>Patient Demographics</CardTitle>
                 </CardHeader>
@@ -569,7 +571,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
           <TabsContent value="operations" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+              <Card className="bg-white dark:bg-black z-10">
                 <CardHeader>
                   <CardTitle>Inventory Trends</CardTitle>
                 </CardHeader>
@@ -587,7 +589,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-white dark:bg-black z-10">
                 <CardHeader>
                   <CardTitle>Resource Utilization</CardTitle>
                 </CardHeader>
@@ -628,7 +630,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
           <TabsContent value="quality" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card>
+              <Card className="bg-white dark:bg-black z-10">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Heart className="mr-2 h-5 w-5" />
@@ -655,7 +657,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-white dark:bg-black z-10">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Shield className="mr-2 h-5 w-5" />
@@ -695,7 +697,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-white dark:bg-black z-10">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Clock className="mr-2 h-5 w-5" />
@@ -730,7 +732,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
           <TabsContent value="predictions" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+              <Card className="bg-white dark:bg-black z-10">
                 <CardHeader>
                   <CardTitle>Patient Outcome Predictions</CardTitle>
                   <CardDescription>AI-powered 30-day outcome forecasts</CardDescription>
@@ -762,7 +764,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-white dark:bg-black z-10">
                 <CardHeader>
                   <CardTitle>Resource Demand Forecast</CardTitle>
                   <CardDescription>Next 7 days capacity planning</CardDescription>

@@ -268,8 +268,8 @@ export default function BedManagementPage({ params }: { params: Promise<{ role: 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Bed Management</h1>
-            <p className="text-gray-600">Monitor and manage hospital bed allocation</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Bed Management</h1>
+            <p className="text-gray-600 dark:text-gray-300">Monitor and manage hospital bed allocation</p>
           </div>
           {/* New: Button to open Change Bed dialog */}
           <div>
@@ -287,17 +287,17 @@ export default function BedManagementPage({ params }: { params: Promise<{ role: 
         </div>
 
         {/* Filters */}
-        <Card>
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
-                <div className="relative">
+                <div className="relative glass-card bg-card backdrop-blur-xl shadow-lg">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     placeholder="Search beds by number, ward, or patient..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 bg-transparent"
                   />
                 </div>
               </div>
@@ -344,67 +344,67 @@ export default function BedManagementPage({ params }: { params: Promise<{ role: 
 
         {/* Bed Stats */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <Bed className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Beds</p>
-                  <p className="text-2xl font-bold">{filteredBeds.length}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Beds</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredBeds.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <Bed className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Available</p>
-                  <p className="text-2xl font-bold">{filteredBeds.filter((b) => b.status === "available").length}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Available</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredBeds.filter((b) => b.status === "available").length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-orange-100 rounded-lg">
                   <User className="h-6 w-6 text-orange-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Occupied</p>
-                  <p className="text-2xl font-bold">{filteredBeds.filter((b) => b.status === "occupied").length}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Occupied</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredBeds.filter((b) => b.status === "occupied").length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-red-100 rounded-lg">
                   <Wrench className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Maintenance</p>
-                  <p className="text-2xl font-bold">{filteredBeds.filter((b) => b.status === "maintenance").length}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Maintenance</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredBeds.filter((b) => b.status === "maintenance").length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <Calendar className="h-6 w-6 text-purple-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Occupancy Rate</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Occupancy Rate</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {Math.round(
                       (filteredBeds.filter((b) => b.status === "occupied").length / filteredBeds.length) * 100,
                     )}
@@ -421,15 +421,7 @@ export default function BedManagementPage({ params }: { params: Promise<{ role: 
           {filteredBeds.map((bed) => (
             <Card
               key={bed.id}
-              className={`hover:shadow-md transition-shadow ${
-                bed.status === "available"
-                  ? "border-green-200"
-                  : bed.status === "occupied"
-                    ? "border-orange-200"
-                    : bed.status === "maintenance"
-                      ? "border-red-200"
-                      : "border-gray-200"
-              }`}
+              className="glass-card bg-card backdrop-blur-xl shadow-lg"
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">

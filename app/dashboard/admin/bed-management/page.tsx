@@ -88,7 +88,7 @@ export default function BedManagementPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">Bed Management</h1>
-            <p className="text-muted-foreground">Manage all hospital beds, add new beds, and filter by status, type, or ward.</p>
+            <p className="text-muted-foreground dark:text-gray-300">Manage all hospital beds, add new beds, and filter by status, type, or ward.</p>
           </div>
           <Button onClick={() => setShowAddBed(true)} className="flex items-center gap-2">
             <Plus className="h-4 w-4" /> Add Bed

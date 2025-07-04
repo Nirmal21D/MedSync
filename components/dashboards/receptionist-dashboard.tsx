@@ -148,13 +148,13 @@ export default function ReceptionistDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Receptionist Dashboard</h1>
-        <p className="text-gray-600">Patient registration and bed management</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Receptionist Dashboard</h1>
+        <p className="text-muted-foreground">Patient registration and bed management</p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-foreground">Total Patients</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -165,7 +165,7 @@ export default function ReceptionistDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Available Beds</CardTitle>
             <Bed className="h-4 w-4 text-muted-foreground" />
@@ -176,7 +176,7 @@ export default function ReceptionistDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-foreground">Occupied Beds</CardTitle>
             <Bed className="h-4 w-4 text-muted-foreground" />
@@ -190,7 +190,7 @@ export default function ReceptionistDashboard() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center text-foreground">
               <Plus className="mr-2 h-5 w-5" />
@@ -204,7 +204,7 @@ export default function ReceptionistDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Bed className="mr-2 h-5 w-5" />
@@ -221,7 +221,7 @@ export default function ReceptionistDashboard() {
 
       {/* Add Patient Form */}
       {showAddPatient && (
-        <Card className="bg-card">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader>
             <CardTitle>Register New Patient</CardTitle>
             <CardDescription>Enter patient information for registration</CardDescription>
@@ -319,7 +319,7 @@ export default function ReceptionistDashboard() {
       )}
 
       {/* Bed Management */}
-      <Card className="bg-card">
+      <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center justify-between text-foreground">
             <span className="flex items-center">
@@ -341,17 +341,17 @@ export default function ReceptionistDashboard() {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="text-center p-4 bg-green-50 dark:bg-green-900 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-300">{availableBedsList.length}</p>
-                  <p className="text-sm text-green-700 dark:text-green-200">Available</p>
+                <div className="text-center p-4 rounded-lg glass-card bg-card backdrop-blur-xl shadow-lg">
+                  <p className="text-2xl font-bold text-green-600">{availableBedsList.length}</p>
+                  <p className="text-sm text-green-700">Available</p>
                 </div>
-                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-300">{occupiedBeds}</p>
-                  <p className="text-sm text-blue-700 dark:text-blue-200">Occupied</p>
+                <div className="text-center p-4 rounded-lg glass-card bg-card backdrop-blur-xl shadow-lg">
+                  <p className="text-2xl font-bold text-blue-600">{occupiedBeds}</p>
+                  <p className="text-sm text-blue-700">Occupied</p>
                 </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">{beds.length}</p>
-                  <p className="text-sm text-gray-700 dark:text-gray-200">Total</p>
+                <div className="text-center p-4 rounded-lg glass-card bg-card backdrop-blur-xl shadow-lg">
+                  <p className="text-2xl font-bold text-gray-600">{beds.length}</p>
+                  <p className="text-sm text-gray-700">Total</p>
                 </div>
               </div>
 
@@ -360,7 +360,7 @@ export default function ReceptionistDashboard() {
                 {patients
                   .filter((p) => p.assignedBed)
                   .map((patient) => (
-                    <div key={patient.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div key={patient.id} className="flex items-center justify-between p-2 rounded glass-card bg-card backdrop-blur-xl shadow-lg">
                       <div>
                         <p className="font-medium">{patient.name}</p>
                         <p className="text-sm text-gray-600">{patient.diagnosis}</p>
@@ -375,7 +375,7 @@ export default function ReceptionistDashboard() {
       </Card>
 
       {/* Recent Patients */}
-      <Card className="bg-card">
+      <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center justify-between text-foreground">
             <span>Recent Patients</span>
@@ -394,13 +394,13 @@ export default function ReceptionistDashboard() {
           />
           <div className="space-y-3">
             {filteredPatients.slice(0, 5).map((patient) => (
-              <div key={patient.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div key={patient.id} className="flex items-center justify-between p-3 rounded-lg glass-card bg-card backdrop-blur-xl shadow-lg">
                 <div>
                   <p className="font-medium text-foreground">{patient.name}</p>
                   <p className="text-sm text-muted-foreground">
                     Age: {patient.age} • {patient.gender}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                  <p className="text-sm text-gray-500 flex items-center">
                     <Phone className="h-3 w-3 mr-1" />
                     {patient.phone}
                   </p>

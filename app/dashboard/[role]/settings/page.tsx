@@ -350,7 +350,7 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
 
   return (
     <DashboardLayout role={role}>
-      <div className="relative space-y-6 theme-bg min-h-screen p-4 overflow-hidden">
+      <div className="relative space-y-6 theme-bg min-h-screen p-4 overflow-hidden scrollbar-none">
         {/* Animated color blobs */}
         <div className="absolute -z-10 left-1/2 top-1/4 w-[32vw] h-[32vw] bg-emerald-200 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-60%,-40%)'}} />
         <div className="absolute -z-10 right-1/4 bottom-0 w-[28vw] h-[28vw] bg-violet-200 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(40%,40%)'}} />
@@ -705,7 +705,7 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
             </Card>
           </TabsContent>
         </Tabs>
-
+        </div>
         <Card className="mt-8">
           <CardHeader>
             <CardTitle>Admin Billing Configuration</CardTitle>

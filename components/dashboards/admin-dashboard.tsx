@@ -35,17 +35,14 @@ export default function AdminDashboard() {
   }, [])
 
   return (
-    <div className="relative space-y-8 min-h-screen p-4 overflow-hidden">
+    <div className="relative space-y-8 min-h-screen p-4 overflow-hidden scrollbar-none">
       {/* Full-page animated gradient background, black in dark mode */}
       <div className="absolute inset-0 -z-20 animate-bgMove bg-[length:300%_300%] bg-gradient-to-br from-[#f0fdfa] via-[#f5d0fe] to-[#ede9fe] dark:from-black dark:via-black dark:to-black transition-colors duration-500" />
-      {/* Animated blobs, visible in both light and dark mode */}
-      <div className="absolute -z-10 left-1/2 top-1/4 w-[32vw] h-[32vw] bg-emerald-200 dark:bg-emerald-900 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-60%,-40%)'}} />
-      <div className="absolute -z-10 right-1/4 bottom-0 w-[28vw] h-[28vw] bg-violet-200 dark:bg-violet-900 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(40%,40%)'}} />
-      <div className="absolute -z-10 left-1/4 bottom-0 w-[20vw] h-[20vw] bg-blue-200 dark:bg-blue-900 opacity-30 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-30%,60%)'}} />
-      <div className="absolute -z-10 top-0 right-0 w-[22vw] h-[22vw] bg-purple-300 dark:bg-purple-900 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(30%,-30%)'}} />
+      {/* Single decorative blob, centered at the top and always within the screen */}
+      <div className="absolute -z-10 left-1/2 top-0 w-[60vw] max-w-[100vw] h-[30vw] bg-emerald-200 dark:bg-emerald-900 opacity-30 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-50%,0)'}} />
       <div>
         <h1 className="text-4xl font-extrabold text-foreground mb-1">Admin Dashboard</h1>
-        <p className="text-lg text-muted-foreground font-medium">Hospital management overview</p>
+        <p className="text-muted-foreground">Admin dashboard subheading here</p>
       </div>
 
       {/* Key Metrics */}

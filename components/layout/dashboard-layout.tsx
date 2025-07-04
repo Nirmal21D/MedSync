@@ -103,7 +103,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
   }
 
   return (
-    <div className="min-h-screen bg-background flex relative">
+    <div className="h-screen overflow-hidden bg-background flex relative">
       {/* Solid background layer: white in light mode, black in dark mode */}
       <div className="fixed inset-0 -z-50 bg-white dark:bg-black" />
 
@@ -115,7 +115,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed top-0 inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground shadow-xl border-r border-border transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 h-screen",
+          "fixed top-0 inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground shadow-xl border-r border-border transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 h-screen overflow-y-none overflow-x-hidden max-w-full",
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
@@ -217,12 +217,15 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
         </div>
 
         {/* Page content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto relative">
-          {/* Animated blobs, behind content */}
-          <div className="absolute z-0 left-1/2 top-1/4 w-[32vw] h-[32vw] bg-emerald-200 dark:bg-emerald-400 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-60%,-40%)'}} />
-          <div className="absolute z-0 right-1/4 bottom-0 w-[28vw] h-[28vw] bg-violet-200 dark:bg-violet-400 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(40%,40%)'}} />
-          <div className="absolute z-0 left-1/4 bottom-0 w-[20vw] h-[20vw] bg-blue-200 dark:bg-blue-400 opacity-30 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-30%,60%)'}} />
-          <div className="absolute z-0 top-0 right-0 w-[22vw] h-[22vw] bg-purple-300 dark:bg-purple-400 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(30%,-30%)'}} />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto scrollbar-none relative">
+          {/* Fewer blobs for a cleaner look */}
+          {/* Corner blobs */}
+          <div className="absolute z-0 w-[32vw] h-[32vw] max-w-[40vw] max-h-[40vw] bg-emerald-200 dark:bg-emerald-400 opacity-20 rounded-full blur-3xl animate-bgMove" style={{left:0,top:0}} />
+          <div className="absolute z-0 w-[24vw] h-[24vw] max-w-[40vw] max-h-[40vw] bg-purple-200 dark:bg-purple-400 opacity-15 rounded-full blur-3xl animate-bgMove" style={{right:0,bottom:0}} />
+          {/* Central blobs */}
+          <div className="absolute z-0 w-40 h-40 bg-emerald-200 dark:bg-emerald-400 opacity-30 rounded-full blur-3xl animate-bgMove" style={{left:'48%',top:'38%',transform:'translate(-50%,-50%)'}} />
+          <div className="absolute z-0 w-32 h-32 bg-violet-200 dark:bg-violet-400 opacity-30 rounded-full blur-3xl animate-bgMove" style={{left:'55%',top:'45%',transform:'translate(-50%,-50%)'}} />
+          <div className="absolute z-0 w-28 h-28 bg-blue-200 dark:bg-blue-400 opacity-20 rounded-full blur-3xl animate-bgMove" style={{left:'43%',top:'52%',transform:'translate(-50%,-50%)'}} />
           {children}
         </main>
       </div>

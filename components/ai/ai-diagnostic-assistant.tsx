@@ -91,7 +91,7 @@ export default function AIDiagnosticAssistant({ className }: AIDiagnosticAssista
   }
 
   return (
-    <Card className={className}>
+    <Card className={`glass-card bg-card backdrop-blur-xl shadow-lg ${className || ''}`.trim()}>
       <CardHeader>
         <CardTitle className="flex items-center">
           <Stethoscope className="mr-2 h-5 w-5" />

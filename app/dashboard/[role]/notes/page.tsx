@@ -218,8 +218,8 @@ export default function NursingNotesPage({ params }: { params: Promise<{ role: s
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Nursing Notes</h1>
-            <p className="text-gray-600">Patient care documentation and shift notes</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Nursing Notes</h1>
+            <p className="text-gray-600 dark:text-gray-300">Patient care documentation and shift notes</p>
           </div>
           <Dialog open={showAddNote} onOpenChange={setShowAddNote}>
             <DialogTrigger asChild>
@@ -260,7 +260,7 @@ export default function NursingNotesPage({ params }: { params: Promise<{ role: s
         </div>
 
         {/* Filters */}
-        <Card>
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
@@ -315,40 +315,40 @@ export default function NursingNotesPage({ params }: { params: Promise<{ role: s
 
         {/* Notes Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <FileText className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Notes</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Notes</p>
                   <p className="text-2xl font-bold">{filteredNotes.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-red-100 rounded-lg">
                   <AlertCircle className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">High Priority</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">High Priority</p>
                   <p className="text-2xl font-bold">{filteredNotes.filter((n) => n.priority === "high").length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Today's Notes</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Today's Notes</p>
                   <p className="text-2xl font-bold">
                     {
                       filteredNotes.filter((n) => new Date(n.timestamp).toDateString() === new Date().toDateString())
@@ -359,14 +359,14 @@ export default function NursingNotesPage({ params }: { params: Promise<{ role: s
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <User className="h-6 w-6 text-purple-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">My Notes</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">My Notes</p>
                   <p className="text-2xl font-bold">
                     {filteredNotes.filter((n) => n.nurseName === "Current Nurse").length}
                   </p>
@@ -384,7 +384,7 @@ export default function NursingNotesPage({ params }: { params: Promise<{ role: s
               (Date.now() - new Date(note.timestamp).getTime()) < 10 * 60 * 1000 // 10 minutes
 
             return (
-              <Card key={note.id} className="hover:shadow-md transition-shadow">
+              <Card key={note.id} className="hover:shadow-md transition-shadow glass-card bg-card backdrop-blur-xl shadow-lg border border-gray-200 dark:border-gray-800 rounded-2xl">
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
@@ -419,8 +419,8 @@ export default function NursingNotesPage({ params }: { params: Promise<{ role: s
                         )}
                       </div>
 
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-gray-800">{note.content}</p>
+                      <div className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 rounded-lg">
+                        <p>{note.content}</p>
                       </div>
                     </div>
                   </div>
