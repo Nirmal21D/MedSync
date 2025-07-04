@@ -170,7 +170,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
+          <Card className="glass-card bg-background backdrop-blur-xl shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -184,7 +184,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card bg-background backdrop-blur-xl shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
               <TrendingDown className="h-4 w-4 text-muted-foreground" />
@@ -198,7 +198,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card bg-background backdrop-blur-xl shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -212,7 +212,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card bg-background backdrop-blur-xl shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Inventory Items</CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
@@ -229,7 +229,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
         {/* Charts Row 1 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
+          <Card className="glass-card bg-background backdrop-blur-xl shadow">
             <CardHeader>
               <CardTitle>Patient Flow Trends</CardTitle>
             </CardHeader>
@@ -253,7 +253,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card bg-background backdrop-blur-xl shadow">
             <CardHeader>
               <CardTitle>Department Utilization</CardTitle>
             </CardHeader>
@@ -281,7 +281,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
         {/* Charts Row 2 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
+          <Card className="glass-card bg-background backdrop-blur-xl shadow">
             <CardHeader>
               <CardTitle>Financial Performance</CardTitle>
             </CardHeader>
@@ -302,7 +302,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card bg-background backdrop-blur-xl shadow">
             <CardHeader>
               <CardTitle>Inventory Trends</CardTitle>
             </CardHeader>
@@ -328,7 +328,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
         </div>
 
         {/* Department Performance Table */}
-        <Card>
+        <Card className="glass-card bg-background backdrop-blur-xl shadow">
           <CardHeader>
             <CardTitle>Department Performance Overview</CardTitle>
           </CardHeader>
@@ -373,7 +373,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
         </Card>
 
         {/* Salary Management Table */}
-        <Card>
+        <Card className="glass-card bg-background backdrop-blur-xl shadow">
           <CardHeader>
             <CardTitle>Staff Salary Management</CardTitle>
           </CardHeader>
@@ -411,7 +411,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
+          <Card className="glass-card bg-background backdrop-blur-xl shadow">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Calendar className="mr-2 h-5 w-5" />
@@ -438,7 +438,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card bg-background backdrop-blur-xl shadow">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <DollarSign className="mr-2 h-5 w-5" />
@@ -465,7 +465,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card bg-background backdrop-blur-xl shadow">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <FileText className="mr-2 h-5 w-5" />

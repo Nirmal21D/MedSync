@@ -94,45 +94,49 @@ export default function BedManagementPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-6">
-          <div>
-            <Label>Status</Label>
-            <Select value={filter.status} onValueChange={value => setFilter(f => ({ ...f, status: value }))}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="occupied">Occupied</SelectItem>
-                <SelectItem value="maintenance">Maintenance</SelectItem>
-                <SelectItem value="reserved">Reserved</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Type</Label>
-            <Select value={filter.type} onValueChange={value => setFilter(f => ({ ...f, type: value }))}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="general">General</SelectItem>
-                <SelectItem value="icu">ICU</SelectItem>
-                <SelectItem value="private">Private</SelectItem>
-                <SelectItem value="emergency">Emergency</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Ward</Label>
-            <Input value={filter.ward} onChange={e => setFilter(f => ({ ...f, ward: e.target.value }))} placeholder="Search ward..." className="w-40" />
-          </div>
-        </div>
+        <Card className="glass-card bg-background backdrop-blur-xl shadow mb-6">
+          <CardContent className="py-4">
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <Label>Status</Label>
+                <Select value={filter.status} onValueChange={value => setFilter(f => ({ ...f, status: value }))}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="occupied">Occupied</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                    <SelectItem value="reserved">Reserved</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Type</Label>
+                <Select value={filter.type} onValueChange={value => setFilter(f => ({ ...f, type: value }))}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="icu">ICU</SelectItem>
+                    <SelectItem value="private">Private</SelectItem>
+                    <SelectItem value="emergency">Emergency</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Ward</Label>
+                <Input value={filter.ward} onChange={e => setFilter(f => ({ ...f, ward: e.target.value }))} placeholder="Search ward..." className="w-40" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Bed List */}
-        <Card className="bg-card">
+        <Card className="glass-card bg-background backdrop-blur-xl shadow mt-6">
           <CardHeader>
             <CardTitle className="text-foreground">All Beds</CardTitle>
             <CardDescription className="text-muted-foreground">List of all beds in the hospital</CardDescription>
