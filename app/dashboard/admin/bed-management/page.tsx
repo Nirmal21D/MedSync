@@ -12,6 +12,7 @@ import { db } from "@/lib/firebase"
 import { Bed } from "@/lib/types"
 import { Bed as BedIcon, Plus } from "lucide-react"
 import DashboardLayout from "@/components/layout/dashboard-layout"
+import { cn } from "@/lib/utils"
 
 export default function BedManagementPage() {
   const [beds, setBeds] = useState<Bed[]>([])
@@ -28,6 +29,7 @@ export default function BedManagementPage() {
   const [addBedStatus, setAddBedStatus] = useState<string | null>(null)
   const [addBedLoading, setAddBedLoading] = useState(false)
   const [filter, setFilter] = useState({ status: "all", type: "all", ward: "" })
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid')
 
   useEffect(() => {
     fetchBeds()
@@ -93,6 +95,26 @@ export default function BedManagementPage() {
           </Button>
         </div>
 
+        {/* View Toggle */}
+        <div className="flex justify-end mb-4">
+          <div className="inline-flex rounded-md shadow-sm" role="group">
+            <button
+              type="button"
+              className={`px-4 py-2 text-sm font-medium border border-gray-200 dark:border-gray-700 focus:z-10 focus:ring-2 focus:ring-blue-500 focus:text-blue-600 dark:focus:text-blue-400 ${viewMode === 'table' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-black text-gray-700 dark:text-gray-300'}`}
+              onClick={() => setViewMode('table')}
+            >
+              Table View
+            </button>
+            <button
+              type="button"
+              className={`px-4 py-2 text-sm font-medium border-t border-b border-r border-gray-200 dark:border-gray-700 focus:z-10 focus:ring-2 focus:ring-blue-500 focus:text-blue-600 dark:focus:text-blue-400 ${viewMode === 'grid' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-black text-gray-700 dark:text-gray-300'}`}
+              onClick={() => setViewMode('grid')}
+            >
+              Grid View
+            </button>
+          </div>
+        </div>
+
         {/* Filters */}
         <Card className="glass-card bg-background backdrop-blur-xl shadow mb-6">
           <CardContent className="py-4">
@@ -135,47 +157,112 @@ export default function BedManagementPage() {
           </CardContent>
         </Card>
 
-        {/* Bed List */}
-        <Card className="glass-card bg-background backdrop-blur-xl shadow mt-6">
-          <CardHeader>
-            <CardTitle className="text-foreground">All Beds</CardTitle>
-            <CardDescription className="text-muted-foreground">List of all beds in the hospital</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading beds...</div>
-            ) : filteredBeds.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No beds found.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full border text-sm">
-                  <thead>
-                    <tr className="bg-gray-100 dark:bg-gray-800">
-                      <th className="px-4 py-2 border text-foreground">Number</th>
-                      <th className="px-4 py-2 border text-foreground">Ward</th>
-                      <th className="px-4 py-2 border text-foreground">Floor</th>
-                      <th className="px-4 py-2 border text-foreground">Type</th>
-                      <th className="px-4 py-2 border text-foreground">Status</th>
-                      <th className="px-4 py-2 border text-foreground">Features</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredBeds.map(bed => (
-                      <tr key={bed.id} className="hover:bg-blue-50 dark:hover:bg-blue-900">
-                        <td className="px-4 py-2 border font-medium text-foreground">{bed.number}</td>
-                        <td className="px-4 py-2 border text-muted-foreground">{bed.ward}</td>
-                        <td className="px-4 py-2 border text-muted-foreground">{bed.floor}</td>
-                        <td className="px-4 py-2 border capitalize text-muted-foreground">{bed.type}</td>
-                        <td className="px-4 py-2 border capitalize text-muted-foreground">{bed.status}</td>
-                        <td className="px-4 py-2 border text-muted-foreground">{Array.isArray(bed.features) ? bed.features.join(", ") : ""}</td>
+        {viewMode === 'table' && (
+          <Card className="glass-card bg-background backdrop-blur-xl shadow mt-6">
+            <CardHeader>
+              <CardTitle className="text-foreground">All Beds</CardTitle>
+              <CardDescription className="text-muted-foreground">List of all beds in the hospital</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading beds...</div>
+              ) : filteredBeds.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">No beds found.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border text-sm">
+                    <thead>
+                      <tr className="bg-gray-100 dark:bg-gray-800">
+                        <th className="px-4 py-2 border text-foreground">Number</th>
+                        <th className="px-4 py-2 border text-foreground">Ward</th>
+                        <th className="px-4 py-2 border text-foreground">Floor</th>
+                        <th className="px-4 py-2 border text-foreground">Type</th>
+                        <th className="px-4 py-2 border text-foreground">Status</th>
+                        <th className="px-4 py-2 border text-foreground">Features</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filteredBeds.map(bed => (
+                        <tr key={bed.id} className="hover:bg-blue-50 dark:hover:bg-blue-900">
+                          <td className="px-4 py-2 border font-medium text-foreground">{bed.number}</td>
+                          <td className="px-4 py-2 border text-muted-foreground">{bed.ward}</td>
+                          <td className="px-4 py-2 border text-muted-foreground">{bed.floor}</td>
+                          <td className="px-4 py-2 border capitalize text-muted-foreground">{bed.type}</td>
+                          <td className="px-4 py-2 border capitalize text-muted-foreground">{bed.status}</td>
+                          <td className="px-4 py-2 border text-muted-foreground">{Array.isArray(bed.features) ? bed.features.join(", ") : ""}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Bed Grid View (Visual, with empty slots) */}
+        {viewMode === 'grid' && !loading && filteredBeds.length > 0 && (
+          <div className="mt-10">
+            <div className="glass-card bg-background backdrop-blur-xl shadow p-8 rounded-2xl">
+              <div className="space-y-10">
+                {(() => {
+                  // Group beds by ward
+                  const wardMap = filteredBeds.reduce((acc, bed) => {
+                    acc[bed.ward] = acc[bed.ward] || [];
+                    acc[bed.ward].push(bed);
+                    return acc;
+                  }, {} as Record<string, Bed[]>);
+                  // Find max beds in any ward or 5
+                  const maxBeds = Math.max(5, ...Object.values(wardMap).map(beds => beds.length));
+                  return Object.entries(wardMap).map(([ward, beds]) => (
+                    <div key={ward}>
+                      <h2 className="text-xl font-semibold mb-4 text-center text-foreground">{ward}</h2>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 justify-items-center">
+                        {Array.from({ length: maxBeds }).map((_, idx) => {
+                          const bed = beds[idx];
+                          if (bed) {
+                            return (
+                              <div
+                                key={bed.id}
+                                className={cn(
+                                  "rounded-lg shadow flex flex-col items-center justify-center p-4 w-36 h-28 border-2 transition-all",
+                                  bed.status === "available" && "bg-emerald-200 border-emerald-400",
+                                  bed.status === "occupied" && "bg-red-200 border-red-400",
+                                  bed.status === "reserved" && "bg-yellow-200 border-yellow-400",
+                                  bed.status === "maintenance" && "bg-gray-200 border-gray-400",
+                                  "dark:bg-opacity-30 dark:border-opacity-60"
+                                )}
+                              >
+                                <BedIcon className="h-8 w-8 mb-1 text-foreground" />
+                                <div className="font-bold text-lg text-foreground">{bed.number}</div>
+                                <div className="text-xs text-muted-foreground capitalize">{bed.type} Bed</div>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <button
+                                key={`empty-${ward}-${idx}`}
+                                type="button"
+                                className="rounded-lg bg-gray-100 border-2 border-gray-200 flex flex-col items-center justify-center p-4 w-36 h-28 opacity-70 dark:bg-gray-800 dark:border-gray-700 hover:opacity-100 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900 transition group"
+                                onClick={() => {
+                                  setShowAddBed(true);
+                                  setNewBed(bed => ({ ...bed, ward }));
+                                }}
+                              >
+                                <Plus className="h-8 w-8 text-blue-400 group-hover:text-blue-600" />
+                                <span className="mt-2 text-xs text-blue-600 font-medium">Add Bed</span>
+                              </button>
+                            );
+                          }
+                        })}
+                      </div>
+                    </div>
+                  ));
+                })()}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        )}
 
         {/* Add Bed Modal */}
         <Dialog open={showAddBed} onOpenChange={setShowAddBed}>
