@@ -12,7 +12,7 @@ body {
   transition: background 0.5s, color 0.5s;
 }
 body.dark {
-  background: linear-gradient(120deg, #18181b 0%, #23272f 100%);
+  background: #000;
   color: #f3f4f6;
 }
 body::before {
@@ -127,7 +127,7 @@ body::before {
   transition: background 0.5s;
 }
 .dark .theme-bg {
-  background: linear-gradient(120deg, #18181b 0%, #23272f 100%);
+  background: #000;
 }
 
 /* Enhanced Glassmorphism utility for cards */

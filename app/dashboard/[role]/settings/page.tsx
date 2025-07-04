@@ -357,8 +357,8 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">System Settings</h1>
-              <p className="text-gray-600">Configure hospital system preferences and security</p>
+              <h1 className="text-3xl font-bold text-foreground">System Settings</h1>
+              <p className="text-muted-foreground">Configure hospital system preferences and security</p>
             </div>
             <Button onClick={handleSave} disabled={isSaving}>
               <Save className="mr-2 h-4 w-4" />
@@ -458,21 +458,21 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm text-gray-600 font-semibold">Hospital Name</p>
-                        <p className="text-lg">{settings.hospital.name || <span className="text-gray-400">Not set</span>}</p>
+                        <p className="text-sm text-muted-foreground font-semibold">Hospital Name</p>
+                        <p className="text-lg">{settings.hospital.name || <span className="text-muted-foreground">Not set</span>}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 font-semibold">Phone Number</p>
-                        <p className="text-lg">{settings.hospital.phone || <span className="text-gray-400">Not set</span>}</p>
+                        <p className="text-sm text-muted-foreground font-semibold">Phone Number</p>
+                        <p className="text-lg">{settings.hospital.phone || <span className="text-muted-foreground">Not set</span>}</p>
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 font-semibold">Email Address</p>
-                      <p className="text-lg">{settings.hospital.email || <span className="text-gray-400">Not set</span>}</p>
+                      <p className="text-sm text-muted-foreground font-semibold">Email Address</p>
+                      <p className="text-lg">{settings.hospital.email || <span className="text-muted-foreground">Not set</span>}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 font-semibold">Address</p>
-                      <p className="text-lg">{settings.hospital.address || <span className="text-gray-400">Not set</span>}</p>
+                      <p className="text-sm text-muted-foreground font-semibold">Address</p>
+                      <p className="text-lg">{settings.hospital.address || <span className="text-muted-foreground">Not set</span>}</p>
                     </div>
                     <Button className="mt-2" onClick={() => setEditHospital(true)}>
                       Edit
@@ -482,15 +482,15 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
                     <p className="text-2xl font-bold text-blue-600">{totalPatients}</p>
-                    <p className="text-sm text-gray-600">Total Patients</p>
+                    <p className="text-sm text-muted-foreground">Total Patients</p>
                   </div>
                   <div className="text-center p-4 bg-green-50 rounded-lg">
                     <p className="text-2xl font-bold text-green-600">{totalStaff}</p>
-                    <p className="text-sm text-gray-600">Total Staff</p>
+                    <p className="text-sm text-muted-foreground">Total Staff</p>
                   </div>
                   <div className="text-center p-4 bg-purple-50 rounded-lg">
                     <p className="text-2xl font-bold text-purple-600">{totalBeds}</p>
-                    <p className="text-sm text-gray-600">Total Beds</p>
+                    <p className="text-sm text-muted-foreground">Total Beds</p>
                   </div>
                 </div>
               </CardContent>
@@ -498,7 +498,7 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
           </TabsContent>
 
           <TabsContent value="security">
-            <Card className="shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow">
+            <Card className="shadow-sm hover:shadow-lg hover:border-border transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Shield className="mr-2 h-5 w-5" />
@@ -545,7 +545,7 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Require Special Characters</Label>
-                    <p className="text-sm text-gray-600">Passwords must contain special characters</p>
+                    <p className="text-sm text-muted-foreground">Passwords must contain special characters</p>
                   </div>
                   <Switch
                     checked={settings.security.passwordPolicy.requireSpecialChars}
@@ -566,7 +566,7 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Require Numbers</Label>
-                    <p className="text-sm text-gray-600">Passwords must contain numbers</p>
+                    <p className="text-sm text-muted-foreground">Passwords must contain numbers</p>
                   </div>
                   <Switch
                     checked={settings.security.passwordPolicy.requireNumbers}
@@ -587,7 +587,7 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Two-Factor Authentication</Label>
-                    <p className="text-sm text-gray-600">Enable 2FA for all users</p>
+                    <p className="text-sm text-muted-foreground">Enable 2FA for all users</p>
                   </div>
                   <Switch
                     checked={settings.security.twoFactorEnabled}
@@ -599,8 +599,8 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
                     }
                   />
                 </div>
-                <div className="mt-4 p-4 bg-gray-50 rounded">
-                  <p className="text-sm text-gray-700">
+                <div className="mt-4 p-4 bg-card rounded">
+                  <p className="text-sm text-foreground">
                     <strong>Current Policy:</strong> Min Length: {settings.security.passwordPolicy.minLength}, 
                     Special Chars: {settings.security.passwordPolicy.requireSpecialChars ? "Yes" : "No"}, 
                     Numbers: {settings.security.passwordPolicy.requireNumbers ? "Yes" : "No"}, 
@@ -623,7 +623,7 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Automatic Backup</Label>
-                    <p className="text-sm text-gray-600">Enable automatic system backups</p>
+                    <p className="text-sm text-muted-foreground">Enable automatic system backups</p>
                   </div>
                   <Switch
                     checked={settings.backup.autoBackup}
@@ -675,7 +675,7 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium">Import Staff Data</h3>
-                    <p className="text-sm text-gray-600">Import staff from Excel (.xlsx) file. Download the template for correct format.</p>
+                    <p className="text-sm text-muted-foreground">Import staff from Excel (.xlsx) file. Download the template for correct format.</p>
                     <div className="flex gap-2">
                       <Button variant="outline" onClick={handleDownloadTemplate}>
                         Download Excel Template
@@ -684,18 +684,18 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
                         type="file"
                         accept=".xlsx, .xls"
                         onChange={handleImportStaff}
-                        className="block w-full text-sm text-gray-500
+                        className="block w-full text-sm text-muted-foreground
                           file:mr-4 file:py-2 file:px-4
                           file:rounded-full file:border-0
                           file:text-sm file:font-semibold
-                          file:bg-blue-50 file:text-blue-700
+                          file:bg-card file:text-blue-700
                           hover:file:bg-blue-100"
                       />
                     </div>
                   </div>
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium">Export Overview as PDF</h3>
-                    <p className="text-sm text-gray-600">Download a PDF summary of hospital settings and analytics.</p>
+                    <p className="text-sm text-muted-foreground">Download a PDF summary of hospital settings and analytics.</p>
                     <Button variant="outline" onClick={handleExportPDF}>
                       Export Overview PDF
                     </Button>

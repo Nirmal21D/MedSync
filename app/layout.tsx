@@ -4,7 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/components/providers/auth-provider"
 import { Toaster } from "@/components/ui/toaster"
-import ThemeInitializer from "@/components/theme-initializer"
+import { ThemeProvider } from "@/components/theme-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -20,13 +20,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className + " min-h-screen bg-gradient-to-br from-gray-100 via-white to-gray-200"} style={{background: 'linear-gradient(120deg, #e0e7ff 0%, #f0fdfa 40%, #f5d0fe 100%, #fef9c3 120%)', backgroundSize: '300% 300%'}}>
-        <ThemeInitializer />
-        <AuthProvider>
-          {children}
-          <Toaster />
-        </AuthProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className + " min-h-screen"}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

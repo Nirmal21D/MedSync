@@ -67,52 +67,52 @@ export default function PharmacistDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Pharmacist Dashboard</h1>
-        <p className="text-gray-600">Prescription management and inventory control</p>
+        <h1 className="text-3xl font-bold text-foreground">Pharmacist Dashboard</h1>
+        <p className="text-muted-foreground">Prescription management and inventory control</p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Prescriptions</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Pending Prescriptions</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingPrescriptions.length}</div>
+            <div className="text-2xl font-bold text-foreground">{pendingPrescriptions.length}</div>
             <p className="text-xs text-muted-foreground">Awaiting review</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Approved Today</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Approved Today</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{approvedPrescriptions.length}</div>
+            <div className="text-2xl font-bold text-foreground">{approvedPrescriptions.length}</div>
             <p className="text-xs text-muted-foreground">Processed prescriptions</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Medicine Stock</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Medicine Stock</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{medicineInventory.length}</div>
+            <div className="text-2xl font-bold text-foreground">{medicineInventory.length}</div>
             <p className="text-xs text-muted-foreground">Total medicines</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Low Stock Alerts</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Low Stock Alerts</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{lowStockMedicines.length}</div>
+            <div className="text-2xl font-bold text-orange-600 dark:text-orange-300">{lowStockMedicines.length}</div>
             <p className="text-xs text-muted-foreground">Need restocking</p>
           </CardContent>
         </Card>
@@ -120,27 +120,27 @@ export default function PharmacistDashboard() {
 
       {/* Low Stock Alerts */}
       {lowStockMedicines.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
+        <Card className="border-orange-200 bg-orange-50 dark:bg-orange-900/40">
           <CardHeader>
-            <CardTitle className="text-orange-800 flex items-center">
+            <CardTitle className="text-orange-800 dark:text-orange-200 flex items-center">
               <AlertTriangle className="mr-2 h-5 w-5" />
               Low Stock Medicines
             </CardTitle>
-            <CardDescription className="text-orange-600">Medicines that need immediate restocking</CardDescription>
+            <CardDescription className="text-orange-600 dark:text-orange-300">Medicines that need immediate restocking</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {lowStockMedicines.map((medicine) => (
-                <div key={medicine.id} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                <div key={medicine.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg">
                   <div>
-                    <p className="font-medium">{medicine.name}</p>
-                    <p className="text-sm text-gray-600">Location: {medicine.location}</p>
+                    <p className="font-medium text-foreground">{medicine.name}</p>
+                    <p className="text-sm text-muted-foreground">Location: {medicine.location}</p>
                   </div>
                   <div className="text-right">
                     <Badge variant={medicine.status === "out-of-stock" ? "destructive" : "secondary"}>
                       {medicine.quantity} {medicine.unit}
                     </Badge>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                       Min: {medicine.minThreshold} {medicine.unit}
                     </p>
                   </div>
@@ -151,85 +151,10 @@ export default function PharmacistDashboard() {
         </Card>
       )}
 
-      {/* Pending Prescriptions */}
-      {/* <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <FileText className="mr-2 h-5 w-5" />
-            Pending Prescriptions
-          </CardTitle>
-          <CardDescription>Prescriptions awaiting your review and approval</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {pendingPrescriptions.length > 0 ? (
-            <div className="space-y-4">
-              {pendingPrescriptions.map((prescription) => (
-                <div key={prescription.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h3 className="font-medium">{prescription.patientName}</h3>
-                      <p className="text-sm text-gray-600">Prescribed by: {prescription.doctorName}</p>
-                      <p className="text-sm text-gray-500">Date: {formatDate(prescription.createdAt)}</p>
-                    </div>
-                    <Badge variant="secondary">Pending</Badge>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <h4 className="font-medium text-sm">Medicines:</h4>
-                    {prescription.medicines.map((medicine, index) => (
-                      <div key={index} className="bg-gray-50 p-3 rounded">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                          <div>
-                            <span className="font-medium">{medicine.name}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Dosage: {medicine.dosage}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Frequency: {medicine.frequency}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Duration: {medicine.duration}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {prescription.notes && (
-                    <div className="mb-4">
-                      <h4 className="font-medium text-sm mb-1">Notes:</h4>
-                      <p className="text-sm text-gray-600 bg-blue-50 p-2 rounded">{prescription.notes}</p>
-                    </div>
-                  )}
-
-                  <div className="flex space-x-2">
-                    <Button onClick={() => handleApprovePrescription(prescription.id)} className="flex-1">
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Approve
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleRejectPrescription(prescription.id)}
-                      className="flex-1"
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Reject
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-center py-8">No pending prescriptions</p>
-          )}
-        </CardContent>
-      </Card> */}
-
       {/* Medicine Inventory */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between text-foreground">
             <span className="flex items-center">
               <Package className="mr-2 h-5 w-5" />
               Medicine Inventory
@@ -238,19 +163,19 @@ export default function PharmacistDashboard() {
               Update Stock
             </Button>
           </CardTitle>
-          <CardDescription>Current medicine stock levels</CardDescription>
+          <CardDescription className="text-muted-foreground">Current medicine stock levels</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {medicineInventory.map((medicine) => (
-              <div key={medicine.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div key={medicine.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                 <div>
-                  <p className="font-medium">{medicine.name}</p>
-                  <p className="text-sm text-gray-600">Location: {medicine.location}</p>
-                  <p className="text-sm text-gray-500">Last updated: {formatDate(medicine.lastUpdated)}</p>
+                  <p className="font-medium text-foreground">{medicine.name}</p>
+                  <p className="text-sm text-muted-foreground">Location: {medicine.location}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Last updated: {formatDate(medicine.lastUpdated)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium">
+                  <p className="font-medium text-foreground">
                     {medicine.quantity} {medicine.unit}
                   </p>
                   <Badge
@@ -264,7 +189,7 @@ export default function PharmacistDashboard() {
                   >
                     {medicine.status.replace("-", " ")}
                   </Badge>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Min: {medicine.minThreshold} {medicine.unit}
                   </p>
                 </div>
@@ -275,22 +200,22 @@ export default function PharmacistDashboard() {
       </Card>
 
       {/* Recent Activity */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Your recent prescription processing activity</CardDescription>
+          <CardTitle className="text-foreground">Recent Activity</CardTitle>
+          <CardDescription className="text-muted-foreground">Your recent prescription processing activity</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {approvedPrescriptions.slice(0, 5).map((prescription) => (
-              <div key={prescription.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <div key={prescription.id} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900 rounded-lg">
                 <div>
-                  <p className="font-medium">{prescription.patientName}</p>
-                  <p className="text-sm text-gray-600">{prescription.medicines.length} medicine(s) approved</p>
+                  <p className="font-medium text-foreground">{prescription.patientName}</p>
+                  <p className="text-sm text-muted-foreground">{prescription.medicines.length} medicine(s) approved</p>
                 </div>
                 <div className="text-right">
                   <Badge variant="default">Approved</Badge>
-                  <p className="text-sm text-gray-500 mt-1">{prescription.processedAt ? formatDate(prescription.processedAt) : ""}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{prescription.processedAt ? formatDate(prescription.processedAt) : ""}</p>
                 </div>
               </div>
             ))}

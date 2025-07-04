@@ -198,8 +198,8 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
-              <p className="text-gray-600">Manage hospital staff members and their roles</p>
+              <h1 className="text-3xl font-bold text-foreground">Staff Management</h1>
+              <p className="text-muted-foreground">Manage hospital staff members and their roles</p>
             </div>
             <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
               <DialogTrigger asChild>
@@ -219,7 +219,7 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
           </div>
 
           {/* Filters */}
-          <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+          <Card className="glass-card bg-background backdrop-blur-xl shadow">
             <CardContent className="pt-6">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
@@ -262,66 +262,66 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
 
           {/* Staff Stats */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+            <Card className="glass-card bg-background backdrop-blur-xl shadow">
               <CardContent className="pt-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-orange-100 rounded-lg">
                     <Users className="h-6 w-6 text-orange-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Staff</p>
+                    <p className="text-sm font-medium text-muted-foreground">Total Staff</p>
                     <p className="text-2xl font-bold">{filteredStaff.length}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+            <Card className="glass-card bg-background backdrop-blur-xl shadow">
               <CardContent className="pt-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-violet-100 rounded-lg">
                     <UserCheck className="h-6 w-6 text-violet-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Doctors</p>
+                    <p className="text-sm font-medium text-muted-foreground">Doctors</p>
                     <p className="text-2xl font-bold">{filteredStaff.filter((s) => s.role === "doctor").length}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+            <Card className="glass-card bg-background backdrop-blur-xl shadow">
               <CardContent className="pt-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-purple-100 rounded-lg">
                     <UserCheck className="h-6 w-6 text-purple-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Nurses</p>
+                    <p className="text-sm font-medium text-muted-foreground">Nurses</p>
                     <p className="text-2xl font-bold">{filteredStaff.filter((s) => s.role === "nurse").length}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+            <Card className="glass-card bg-background backdrop-blur-xl shadow">
               <CardContent className="pt-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-orange-100 rounded-lg">
                     <UserCheck className="h-6 w-6 text-orange-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Active</p>
+                    <p className="text-sm font-medium text-muted-foreground">Active</p>
                     <p className="text-2xl font-bold">{filteredStaff.filter((s) => s.status === "active").length}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+            <Card className="glass-card bg-background backdrop-blur-xl shadow">
               <CardContent className="pt-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-red-100 rounded-lg">
                     <UserX className="h-6 w-6 text-red-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Inactive</p>
+                    <p className="text-sm font-medium text-muted-foreground">Inactive</p>
                     <p className="text-2xl font-bold">{filteredStaff.filter((s) => s.status === "inactive").length}</p>
                   </div>
                 </div>
@@ -354,12 +354,12 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
                 ? 'bg-green-100 text-green-700'
                 : 'bg-gray-200 text-gray-600'
               return (
-                <Card key={staffMember.id} className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+                <Card key={staffMember.id} className="glass-card bg-background backdrop-blur-xl shadow">
                   <CardContent className="py-6 px-4">
                     <div className="flex items-center gap-6">
                       {/* Avatar */}
                       <div className="flex-shrink-0">
-                        <img src={avatar} alt={staffMember.role} className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md" />
+                        <img src={avatar} alt={staffMember.role} className="w-20 h-20 rounded-full object-cover border-4 border-background shadow-md" />
                       </div>
                       {/* Main info */}
                       <div className="flex-1 min-w-0">
@@ -368,7 +368,7 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold capitalize ${statusBadgeClass}`}>{staffMember.status}</span>
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold capitalize ${roleBadgeClass}`}>{staffMember.role}</span>
                         </div>
-                        <div className="flex flex-wrap gap-6 text-sm text-gray-600">
+                        <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1"><Mail className="h-4 w-4" />{staffMember.email}</span>
                           <span className="flex items-center gap-1"><Phone className="h-4 w-4" />{staffMember.phone}</span>
                           <span className="flex items-center gap-1"><Users className="h-4 w-4" />{staffMember.department}</span>
@@ -376,7 +376,7 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
                         </div>
                         {staffMember.specialization && (
                           <div className="mt-2">
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-muted-foreground">
                               <strong>Specialization:</strong> {staffMember.specialization}
                             </p>
                           </div>
@@ -412,12 +412,12 @@ export default function StaffPage({ params }: { params: Promise<{ role: string }
           </div>
 
           {filteredStaff.length === 0 && (
-            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+            <Card className="glass-card bg-background backdrop-blur-xl shadow">
               <CardContent className="pt-6">
                 <div className="text-center py-8">
                   <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No staff members found</h3>
-                  <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+                  <h3 className="text-lg font-medium text-foreground mb-2">No staff members found</h3>
+                  <p className="text-muted-foreground">Try adjusting your search or filter criteria.</p>
                 </div>
               </CardContent>
             </Card>

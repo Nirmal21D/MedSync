@@ -49,52 +49,52 @@ export default function DoctorDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Doctor Dashboard</h1>
-        <p className="text-gray-600">Patient care and medical management</p>
+        <h1 className="text-3xl font-bold text-foreground">Doctor Dashboard</h1>
+        <p className="text-muted-foreground">Patient care and medical management</p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">My Patients</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">My Patients</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{myPatients.length}</div>
+            <div className="text-2xl font-bold text-foreground">{myPatients.length}</div>
             <p className="text-xs text-muted-foreground">{criticalPatients.length} critical</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Appointments</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Today's Appointments</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{todayAppointments.length}</div>
+            <div className="text-2xl font-bold text-foreground">{todayAppointments.length}</div>
             <p className="text-xs text-muted-foreground">Scheduled for today</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Prescriptions</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Pending Prescriptions</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingPrescriptions.length}</div>
+            <div className="text-2xl font-bold text-foreground">{pendingPrescriptions.length}</div>
             <p className="text-xs text-muted-foreground">Awaiting pharmacy</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Critical Alerts</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Critical Alerts</CardTitle>
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{criticalPatients.length}</div>
+            <div className="text-2xl font-bold text-red-600 dark:text-red-300">{criticalPatients.length}</div>
             <p className="text-xs text-muted-foreground">Need attention</p>
           </CardContent>
         </Card>
@@ -102,26 +102,26 @@ export default function DoctorDashboard() {
 
       {/* Critical Patients Alert */}
       {criticalPatients.length > 0 && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-red-200 bg-red-50 dark:bg-red-900/40">
           <CardHeader>
-            <CardTitle className="text-red-800 flex items-center">
+            <CardTitle className="text-red-800 dark:text-red-200 flex items-center">
               <AlertCircle className="mr-2 h-5 w-5" />
               Critical Patients
             </CardTitle>
-            <CardDescription className="text-red-600">Patients requiring immediate attention</CardDescription>
+            <CardDescription className="text-red-600 dark:text-red-300">Patients requiring immediate attention</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {criticalPatients.map((patient) => (
-                <div key={patient.id} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                <div key={patient.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg">
                   <div>
-                    <p className="font-medium">{patient.name}</p>
-                    <p className="text-sm text-gray-600">{patient.diagnosis}</p>
-                    <p className="text-sm text-gray-500">Bed: {patient.assignedBed}</p>
+                    <p className="font-medium text-foreground">{patient.name}</p>
+                    <p className="text-sm text-muted-foreground">{patient.diagnosis}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Bed: {patient.assignedBed}</p>
                   </div>
                   <div className="text-right">
                     <Badge variant="destructive">Critical</Badge>
-                    <p className="text-sm text-gray-500 mt-1">Temp: {patient.vitals.temperature}°F</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Temp: {patient.vitals.temperature}°F</p>
                   </div>
                 </div>
               ))}
@@ -131,9 +131,9 @@ export default function DoctorDashboard() {
       )}
 
       {/* Today's Schedule */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between text-foreground">
             <span className="flex items-center">
               <Clock className="mr-2 h-5 w-5" />
               Today's Schedule
@@ -143,20 +143,20 @@ export default function DoctorDashboard() {
               Add Appointment
             </Button>
           </CardTitle>
-          <CardDescription>Your appointments for today</CardDescription>
+          <CardDescription className="text-muted-foreground">Your appointments for today</CardDescription>
         </CardHeader>
         <CardContent>
           {todayAppointments.length > 0 ? (
             <div className="space-y-3">
               {todayAppointments.map((appointment) => (
-                <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                   <div>
-                    <p className="font-medium">{appointment.patientName}</p>
-                    <p className="text-sm text-gray-600">{appointment.type}</p>
-                    {appointment.notes && <p className="text-sm text-gray-500">{appointment.notes}</p>}
+                    <p className="font-medium text-foreground">{appointment.patientName}</p>
+                    <p className="text-sm text-muted-foreground">{appointment.type}</p>
+                    {appointment.notes && <p className="text-sm text-gray-500 dark:text-gray-400">{appointment.notes}</p>}
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">{appointment.time}</p>
+                    <p className="font-medium text-foreground">{appointment.time}</p>
                     <Badge variant={appointment.status === "scheduled" ? "default" : "secondary"}>
                       {appointment.status}
                     </Badge>
@@ -165,30 +165,30 @@ export default function DoctorDashboard() {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No appointments scheduled for today</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No appointments scheduled for today</p>
           )}
         </CardContent>
       </Card>
 
       {/* Recent Patients */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between text-foreground">
             <span>My Patients</span>
             <Button size="sm" variant="outline">
               View All
             </Button>
           </CardTitle>
-          <CardDescription>Patients under your care</CardDescription>
+          <CardDescription className="text-muted-foreground">Patients under your care</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {myPatients.slice(0, 5).map((patient) => (
-              <div key={patient.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div key={patient.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                 <div>
-                  <p className="font-medium">{patient.name}</p>
-                  <p className="text-sm text-gray-600">{patient.diagnosis}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium text-foreground">{patient.name}</p>
+                  <p className="text-sm text-muted-foreground">{patient.diagnosis}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     Age: {patient.age} • Bed: {patient.assignedBed}
                   </p>
                 </div>
@@ -204,7 +204,7 @@ export default function DoctorDashboard() {
                   >
                     {patient.status}
                   </Badge>
-                  <p className="text-sm text-gray-500 mt-1">BP: {patient.vitals?.bloodPressure ?? "N/A"}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">BP: {patient.vitals?.bloodPressure ?? "N/A"}</p>
                 </div>
               </div>
             ))}
@@ -213,10 +213,10 @@ export default function DoctorDashboard() {
       </Card>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks and shortcuts</CardDescription>
+          <CardTitle className="text-foreground">Quick Actions</CardTitle>
+          <CardDescription className="text-muted-foreground">Common tasks and shortcuts</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

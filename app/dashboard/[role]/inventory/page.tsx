@@ -183,10 +183,10 @@ export default function InventoryPage({ params }: { params: Promise<{ role: stri
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-foreground">
                 {role === "pharmacist" ? "Medicine Inventory" : "Inventory Management"}
               </h1>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 {role === "pharmacist" ? "Manage medicine stock levels" : "Track and manage hospital inventory"}
               </p>
             </div>
@@ -213,7 +213,7 @@ export default function InventoryPage({ params }: { params: Promise<{ role: stri
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search inventory by name or location..."
                       value={searchTerm}
@@ -252,72 +252,54 @@ export default function InventoryPage({ params }: { params: Promise<{ role: stri
 
           {/* Inventory Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+            <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
               <CardContent className="pt-6">
                 <div className="flex items-center">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <Package className="h-6 w-6 text-orange-600" />
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                    <Package className="h-6 w-6 text-blue-600 dark:text-blue-300" />
                   </div>
-
-                  <div className="flex flex-col gap-2 ml-4">
-                    <Button variant="outline" size="sm" type="button" onClick={() => setEditingItem(item)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      type="button"
-                      onClick={() => setDeleteConfirmId(item.id)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </Button>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-muted-foreground">Total Items</p>
+                    <p className="text-2xl font-bold text-foreground">{filteredInventory.length}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+            <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
               <CardContent className="pt-6">
                 <div className="flex items-center">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                    <Package className="h-6 w-6 text-orange-600 dark:text-orange-300" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Available</p>
-                    <p className="text-2xl font-bold">
-                      {filteredInventory.filter((i) => i.status === "available").length}
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">Available</p>
+                    <p className="text-2xl font-bold text-foreground">{filteredInventory.filter((i) => i.status === "available").length}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+            <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
               <CardContent className="pt-6">
                 <div className="flex items-center">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <AlertTriangle className="h-6 w-6 text-orange-600" />
+                  <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                    <AlertTriangle className="h-6 w-6 text-orange-600 dark:text-orange-300" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Low Stock</p>
-                    <p className="text-2xl font-bold">
-                      {filteredInventory.filter((i) => i.status === "low-stock").length}
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">Low Stock</p>
+                    <p className="text-2xl font-bold text-foreground">{filteredInventory.filter((i) => i.status === "low-stock").length}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+            <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
               <CardContent className="pt-6">
                 <div className="flex items-center">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                    <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-300" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Out of Stock</p>
-                    <p className="text-2xl font-bold">
-                      {filteredInventory.filter((i) => i.status === "out-of-stock").length}
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">Out of Stock</p>
+                    <p className="text-2xl font-bold text-foreground">{filteredInventory.filter((i) => i.status === "out-of-stock").length}</p>
                   </div>
                 </div>
               </CardContent>
@@ -335,8 +317,10 @@ export default function InventoryPage({ params }: { params: Promise<{ role: stri
               const statusColor = item.status === 'available' ? 'bg-green-100 text-green-700'
                 : item.status === 'low-stock' ? 'bg-orange-100 text-orange-700'
                 : 'bg-red-100 text-red-700'
+              // Fix: Only render inventory items, not the Edit/Delete card
+              if (!item.name) return null;
               return (
-                <div key={item.id} className="relative group rounded-xl border border-gray-200 bg-slate-50 shadow-lg shadow-emerald-100/40 hover:scale-[1.03] transition-transform p-4 flex flex-col min-h-[180px]">
+                <div key={item.id} className="relative group rounded-xl border border-border bg-card shadow-lg hover:scale-[1.03] transition-transform p-4 flex flex-col min-h-[180px]">
                   {/* Accent bar */}
                   <div className="absolute top-0 left-0 w-full h-2 rounded-t-xl bg-violet-500" />
                   {/* Category icon */}
@@ -355,12 +339,12 @@ export default function InventoryPage({ params }: { params: Promise<{ role: stri
                   {/* Main content */}
                   <div className="flex-1 flex flex-col items-center justify-center text-center">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="break-words text-base font-semibold leading-tight text-center">{item.name}</h3>
+                      <h3 className="break-words text-base font-semibold leading-tight text-center text-foreground">{item.name}</h3>
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${statusColor}`}>{item.quantity} {item.unit}</span>
                     </div>
                     <div className="flex items-center gap-2 mb-1">
                       <Badge variant="outline" className="capitalize">{item.category}</Badge>
-                      <span className="text-xs text-gray-500">{item.location}</span>
+                      <span className="text-xs text-muted-foreground">{item.location}</span>
                     </div>
                   </div>
                   {/* Status at bottom */}

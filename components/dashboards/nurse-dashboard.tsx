@@ -132,82 +132,82 @@ export default function NurseDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Nurse Dashboard</h1>
-        <p className="text-gray-600">Patient care and nursing management</p>
+        <h1 className="text-3xl font-bold text-foreground">Nurse Dashboard</h1>
+        <p className="text-muted-foreground">Patient care and nursing management</p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Total Patients</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{patients.length}</div>
+            <div className="text-2xl font-bold text-foreground">{patients.length}</div>
             <p className="text-xs text-muted-foreground">All patients</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Critical Patients</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Critical Patients</CardTitle>
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{criticalPatients.length}</div>
+            <div className="text-2xl font-bold text-red-600 dark:text-red-300">{criticalPatients.length}</div>
             <p className="text-xs text-muted-foreground">Need attention</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Medicine Reminders</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Medicine Reminders</CardTitle>
             <Bell className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeReminders.length}</div>
+            <div className="text-2xl font-bold text-foreground">{activeReminders.length}</div>
             <p className="text-xs text-muted-foreground">Active Reminders</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Notes Added</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Notes Added</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {/* You can fetch and count notes for this nurse if needed */}
-            <div className="text-2xl font-bold">-</div>
+            <div className="text-2xl font-bold text-foreground">-</div>
             <p className="text-xs text-muted-foreground">This shift</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Medicine Reminders - Enhanced Version */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-foreground">
             <Bell className="mr-2 h-5 w-5" />
             Medicine Reminders
           </CardTitle>
-          <CardDescription>Scheduled medication times for your patients</CardDescription>
+          <CardDescription className="text-muted-foreground">Scheduled medication times for your patients</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {activeReminders.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center">
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
                 No active medicine reminders at the moment
               </p>
             ) : (
               activeReminders.map((reminder) => (
                 <div 
                   key={reminder.id} 
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
                 >
                   <div>
-                    <p className="font-medium">{reminder.patientName}</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="font-medium text-foreground">{reminder.patientName}</p>
+                    <p className="text-sm text-muted-foreground">
                       {reminder.medicineName} - {reminder.dosage}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {reminder.frequency} | {reminder.timeOfDay.join(", ")}
                     </p>
                   </div>
@@ -250,10 +250,10 @@ export default function NurseDashboard() {
       </Card>
 
       {/* Patient List */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>All Patients</CardTitle>
-          <CardDescription>All patients under your care</CardDescription>
+          <CardTitle className="text-foreground">All Patients</CardTitle>
+          <CardDescription className="text-muted-foreground">All patients under your care</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -261,12 +261,12 @@ export default function NurseDashboard() {
               const notes = (patient as any).notes as any[] | undefined;
               const safeNotes = notes ?? [];
               return (
-                <div key={patient.id} className="border rounded-lg p-4">
+                <div key={patient.id} className="border rounded-lg p-4 bg-white dark:bg-gray-900">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="font-medium">{patient.name}</h3>
-                      <p className="text-sm text-gray-600">{patient.diagnosis}</p>
-                      <p className="text-sm text-gray-500">
+                      <h3 className="font-medium text-foreground">{patient.name}</h3>
+                      <p className="text-sm text-muted-foreground">{patient.diagnosis}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         Age: {patient.age} • Bed: {patient.assignedBed}
                       </p>
                     </div>
@@ -322,10 +322,10 @@ export default function NurseDashboard() {
       </Card>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common nursing tasks</CardDescription>
+          <CardTitle className="text-foreground">Quick Actions</CardTitle>
+          <CardDescription className="text-muted-foreground">Common nursing tasks</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

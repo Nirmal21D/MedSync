@@ -35,87 +35,89 @@ export default function AdminDashboard() {
   }, [])
 
   return (
-    <div className="relative space-y-8 theme-bg min-h-screen p-4 overflow-hidden">
-      {/* Animated color blobs */}
-      <div className="absolute -z-10 left-1/2 top-1/4 w-[32vw] h-[32vw] bg-emerald-200 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-60%,-40%)'}} />
-      <div className="absolute -z-10 right-1/4 bottom-0 w-[28vw] h-[28vw] bg-violet-200 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(40%,40%)'}} />
-      <div className="absolute -z-10 left-1/4 bottom-0 w-[20vw] h-[20vw] bg-purple-200 opacity-30 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-30%,60%)'}} />
-
+    <div className="relative space-y-8 min-h-screen p-4 overflow-hidden">
+      {/* Full-page animated gradient background, black in dark mode */}
+      <div className="absolute inset-0 -z-20 animate-bgMove bg-[length:300%_300%] bg-gradient-to-br from-[#f0fdfa] via-[#f5d0fe] to-[#ede9fe] dark:from-black dark:via-black dark:to-black transition-colors duration-500" />
+      {/* Animated blobs, visible in both light and dark mode */}
+      <div className="absolute -z-10 left-1/2 top-1/4 w-[32vw] h-[32vw] bg-emerald-200 dark:bg-emerald-900 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-60%,-40%)'}} />
+      <div className="absolute -z-10 right-1/4 bottom-0 w-[28vw] h-[28vw] bg-violet-200 dark:bg-violet-900 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(40%,40%)'}} />
+      <div className="absolute -z-10 left-1/4 bottom-0 w-[20vw] h-[20vw] bg-blue-200 dark:bg-blue-900 opacity-30 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(-30%,60%)'}} />
+      <div className="absolute -z-10 top-0 right-0 w-[22vw] h-[22vw] bg-purple-300 dark:bg-purple-900 opacity-40 rounded-full blur-3xl animate-bgMove" style={{transform:'translate(30%,-30%)'}} />
       <div>
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-1">Admin Dashboard</h1>
-        <p className="text-lg text-gray-700 font-medium">Hospital management overview</p>
+        <h1 className="text-4xl font-extrabold text-foreground mb-1">Admin Dashboard</h1>
+        <p className="text-lg text-muted-foreground font-medium">Hospital management overview</p>
       </div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-semibold">Total Patients</CardTitle>
-            <div className="rounded-xl bg-emerald-100 p-2"><Users className="h-6 w-6 text-emerald-600" /></div>
+            <CardTitle className="text-base font-semibold text-foreground">Total Patients</CardTitle>
+            <div className="rounded-xl bg-emerald-100 dark:bg-emerald-900 p-2"><Users className="h-6 w-6 text-emerald-600 dark:text-emerald-300" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-extrabold text-gray-900">{totalPatients}</div>
-            <p className="text-xs text-gray-500">+2 from yesterday</p>
+            <div className="text-3xl font-extrabold text-foreground">{totalPatients}</div>
+            <p className="text-xs text-muted-foreground">+2 from yesterday</p>
           </CardContent>
         </Card>
-        <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-semibold">Staff Members</CardTitle>
-            <div className="rounded-xl bg-violet-100 p-2"><Users className="h-6 w-6 text-violet-600" /></div>
+            <CardTitle className="text-base font-semibold text-foreground">Staff Members</CardTitle>
+            <div className="rounded-xl bg-violet-100 dark:bg-violet-900 p-2"><Users className="h-6 w-6 text-violet-600 dark:text-violet-300" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-extrabold text-gray-900">{totalStaff}</div>
-            <p className="text-xs text-gray-500">All active</p>
+            <div className="text-3xl font-extrabold text-foreground">{totalStaff}</div>
+            <p className="text-xs text-muted-foreground">All active</p>
           </CardContent>
         </Card>
-        <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-semibold">Critical Patients</CardTitle>
-            <div className="rounded-xl bg-red-100 p-2"><Activity className="h-6 w-6 text-red-600" /></div>
+            <CardTitle className="text-base font-semibold text-foreground">Critical Patients</CardTitle>
+            <div className="rounded-xl bg-red-100 dark:bg-red-900 p-2"><Activity className="h-6 w-6 text-red-600 dark:text-red-300" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-extrabold text-red-600">{criticalPatients}</div>
-            <p className="text-xs text-gray-500">Requires attention</p>
+            <div className="text-3xl font-extrabold text-red-600 dark:text-red-300">{criticalPatients}</div>
+            <p className="text-xs text-muted-foreground">Requires attention</p>
           </CardContent>
         </Card>
-        <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-semibold">Inventory Alerts</CardTitle>
-            <div className="rounded-xl bg-orange-100 p-2"><Package className="h-6 w-6 text-orange-600" /></div>
+            <CardTitle className="text-base font-semibold text-foreground">Inventory Alerts</CardTitle>
+            <div className="rounded-xl bg-orange-100 dark:bg-orange-900 p-2"><Package className="h-6 w-6 text-orange-600 dark:text-orange-300" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-extrabold text-orange-600">{lowStockItems}</div>
-            <p className="text-xs text-gray-500">Items need restocking</p>
+            <div className="text-3xl font-extrabold text-orange-600 dark:text-orange-300">{lowStockItems}</div>
+            <p className="text-xs text-muted-foreground">Items need restocking</p>
           </CardContent>
         </Card>
       </div>
       {/* Recent Alerts */}
-      <Card className="glass-card bg-white/70 backdrop-blur-xl shadow-lg">
+      <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
         <CardHeader>
-          <CardTitle>System Alerts</CardTitle>
-          <CardDescription>Recent notifications and system status</CardDescription>
+          <CardTitle className="text-foreground">System Alerts</CardTitle>
+          <CardDescription className="text-muted-foreground">Recent notifications and system status</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="flex items-center space-x-3 p-3 glass-card bg-red-50/60 rounded-lg">
-              <div className="rounded-full bg-red-100 p-2"><AlertTriangle className="h-5 w-5 text-red-600" /></div>
+            <div className="flex items-center space-x-3 p-3 glass-card bg-red-50/60 dark:bg-red-900/40 rounded-lg">
+              <div className="rounded-full bg-red-100 dark:bg-red-900 p-2"><AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-300" /></div>
               <div>
-                <p className="font-medium text-red-800">Critical Patient Alert</p>
-                <p className="text-sm text-red-600">Emily Davis requires immediate attention</p>
+                <p className="font-medium text-red-800 dark:text-red-200">Critical Patient Alert</p>
+                <p className="text-sm text-red-600 dark:text-red-300">Emily Davis requires immediate attention</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3 p-3 glass-card bg-orange-50/60 rounded-lg">
-              <div className="rounded-full bg-orange-100 p-2"><Package className="h-5 w-5 text-orange-600" /></div>
+            <div className="flex items-center space-x-3 p-3 glass-card bg-orange-50/60 dark:bg-orange-900/40 rounded-lg">
+              <div className="rounded-full bg-orange-100 dark:bg-orange-900 p-2"><Package className="h-5 w-5 text-orange-600 dark:text-orange-300" /></div>
               <div>
-                <p className="font-medium text-orange-800">Low Stock Alert</p>
-                <p className="text-sm text-orange-600">Surgical gloves running low - 50 boxes remaining</p>
+                <p className="font-medium text-orange-800 dark:text-orange-200">Low Stock Alert</p>
+                <p className="text-sm text-orange-600 dark:text-orange-300">Surgical gloves running low - 50 boxes remaining</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3 p-3 glass-card bg-green-50/60 rounded-lg">
-              <div className="rounded-full bg-green-100 p-2"><CheckCircle className="h-5 w-5 text-green-600" /></div>
+            <div className="flex items-center space-x-3 p-3 glass-card bg-green-50/60 dark:bg-green-900/40 rounded-lg">
+              <div className="rounded-full bg-green-100 dark:bg-green-900 p-2"><CheckCircle className="h-5 w-5 text-green-600 dark:text-green-300" /></div>
               <div>
-                <p className="font-medium text-green-800">System Update</p>
-                <p className="text-sm text-green-600">Daily backup completed successfully</p>
+                <p className="font-medium text-green-800 dark:text-green-200">System Update</p>
+                <p className="text-sm text-green-600 dark:text-green-300">Daily backup completed successfully</p>
               </div>
             </div>
           </div>

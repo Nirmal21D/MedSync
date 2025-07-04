@@ -167,52 +167,52 @@ export default function ReceptionistDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Receptionist Dashboard</h1>
-        <p className="text-gray-600">Patient registration and appointment management</p>
+        <h1 className="text-3xl font-bold text-foreground">Receptionist Dashboard</h1>
+        <p className="text-muted-foreground">Patient registration and appointment management</p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Total Patients</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{patients.length}</div>
+            <div className="text-2xl font-bold text-foreground">{patients.length}</div>
             <p className="text-xs text-muted-foreground">Registered patients</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Appointments</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Today's Appointments</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{todayAppointments.length}</div>
+            <div className="text-2xl font-bold text-foreground">{todayAppointments.length}</div>
             <p className="text-xs text-muted-foreground">Scheduled today</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Beds</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Available Beds</CardTitle>
             <Bed className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{availableBedsList.length}</div>
+            <div className="text-2xl font-bold text-foreground">{availableBedsList.length}</div>
             <p className="text-xs text-muted-foreground">Out of {beds.length} total</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Occupied Beds</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Occupied Beds</CardTitle>
             <Bed className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{occupiedBeds}</div>
+            <div className="text-2xl font-bold text-foreground">{occupiedBeds}</div>
             <p className="text-xs text-muted-foreground">Currently occupied</p>
           </CardContent>
         </Card>
@@ -220,9 +220,9 @@ export default function ReceptionistDashboard() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-foreground">
               <Plus className="mr-2 h-5 w-5" />
               Add New Patient
             </CardTitle>
@@ -234,9 +234,9 @@ export default function ReceptionistDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-foreground">
               <Calendar className="mr-2 h-5 w-5" />
               Schedule Appointment
             </CardTitle>
@@ -248,9 +248,9 @@ export default function ReceptionistDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-foreground">
               <Bed className="mr-2 h-5 w-5" />
               Assign Bed
             </CardTitle>
@@ -265,7 +265,7 @@ export default function ReceptionistDashboard() {
 
       {/* Add Patient Form */}
       {showAddPatient && (
-        <Card>
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle>Register New Patient</CardTitle>
             <CardDescription>Enter patient information for registration</CardDescription>
@@ -363,28 +363,26 @@ export default function ReceptionistDashboard() {
       )}
 
       {/* Today's Appointments */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-foreground">
             <Clock className="mr-2 h-5 w-5" />
             Today's Appointments
           </CardTitle>
-          <CardDescription>Scheduled appointments for today</CardDescription>
+          <CardDescription className="text-muted-foreground">Scheduled appointments for today</CardDescription>
         </CardHeader>
         <CardContent>
           {todayAppointments.length > 0 ? (
             <div className="space-y-3">
               {todayAppointments.map((appointment) => (
-                <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                   <div>
-                    <p className="font-medium">{appointment.patientName}</p>
-                    <p className="text-sm text-gray-600">Dr. {appointment.doctorName}</p>
-                    <p className="text-sm text-gray-500">{appointment.type}</p>
-                    {/* Example: Show appointment date safely */}
-                    {/* <p className="text-xs text-gray-400">Date: {formatDate(appointment.date)}</p> */}
+                    <p className="font-medium text-foreground">{appointment.patientName}</p>
+                    <p className="text-sm text-muted-foreground">Dr. {appointment.doctorName}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{appointment.type}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">{appointment.time}</p>
+                    <p className="font-medium text-foreground">{appointment.time}</p>
                     <Badge
                       variant={
                         appointment.status === "scheduled"
@@ -401,15 +399,15 @@ export default function ReceptionistDashboard() {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No appointments scheduled for today</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No appointments scheduled for today</p>
           )}
         </CardContent>
       </Card>
 
       {/* Bed Management */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between text-foreground">
             <span className="flex items-center">
               <Bed className="mr-2 h-5 w-5" />
               Bed Management
@@ -418,7 +416,7 @@ export default function ReceptionistDashboard() {
               View All Beds
             </Button>
           </CardTitle>
-          <CardDescription>Current bed occupancy status</CardDescription>
+          <CardDescription className="text-muted-foreground">Current bed occupancy status</CardDescription>
         </CardHeader>
         <CardContent>
           {beds.length === 0 ? (
@@ -429,17 +427,17 @@ export default function ReceptionistDashboard() {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">{availableBedsList.length}</p>
-                  <p className="text-sm text-green-700">Available</p>
+                <div className="text-center p-4 bg-green-50 dark:bg-green-900 rounded-lg">
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-300">{availableBedsList.length}</p>
+                  <p className="text-sm text-green-700 dark:text-green-200">Available</p>
                 </div>
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">{occupiedBeds}</p>
-                  <p className="text-sm text-blue-700">Occupied</p>
+                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-300">{occupiedBeds}</p>
+                  <p className="text-sm text-blue-700 dark:text-blue-200">Occupied</p>
                 </div>
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-600">{beds.length}</p>
-                  <p className="text-sm text-gray-700">Total</p>
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">{beds.length}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-200">Total</p>
                 </div>
               </div>
 
@@ -463,15 +461,15 @@ export default function ReceptionistDashboard() {
       </Card>
 
       {/* Recent Patients */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between text-foreground">
             <span>Recent Patients</span>
             <Button size="sm" variant="outline">
               View All
             </Button>
           </CardTitle>
-          <CardDescription>Recently registered patients</CardDescription>
+          <CardDescription className="text-muted-foreground">Recently registered patients</CardDescription>
         </CardHeader>
         <CardContent>
           <Input
@@ -482,13 +480,13 @@ export default function ReceptionistDashboard() {
           />
           <div className="space-y-3">
             {filteredPatients.slice(0, 5).map((patient) => (
-              <div key={patient.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div key={patient.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                 <div>
-                  <p className="font-medium">{patient.name}</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="font-medium text-foreground">{patient.name}</p>
+                  <p className="text-sm text-muted-foreground">
                     Age: {patient.age} • {patient.gender}
                   </p>
-                  <p className="text-sm text-gray-500 flex items-center">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
                     <Phone className="h-3 w-3 mr-1" />
                     {patient.phone}
                   </p>

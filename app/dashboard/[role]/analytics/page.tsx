@@ -151,8 +151,8 @@ export default function AnalyticsPage({ params }: { params: Promise<{ role: stri
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-            <p className="text-gray-600">Hospital performance metrics and insights</p>
+            <h1 className="text-3xl font-bold text-foreground">Analytics Dashboard</h1>
+            <p className="text-muted-foreground">Hospital performance metrics and insights</p>
           </div>
           <Select defaultValue="last-6-months">
             <SelectTrigger className="w-48">
