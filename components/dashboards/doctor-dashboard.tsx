@@ -4,19 +4,20 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Calendar, FileText, Clock, AlertCircle, Plus } from "lucide-react"
+import { Users, Calendar, FileText, Clock, AlertCircle, Plus, Brain } from "lucide-react"
 import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import type { Patient, Appointment, Prescription } from "@/lib/types"
+import type { Patient, Prescription } from "@/lib/types"
 import { useAuth } from "@/components/providers/auth-provider"
+import AIQuickInsights from "@/components/ai/ai-quick-insights"
+import AIDiagnosticAssistant from "@/components/ai/ai-diagnostic-assistant"
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
   const [myPatients, setMyPatients] = useState<Patient[]>([])
-  const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([])
   const [pendingPrescriptions, setPendingPrescriptions] = useState<Prescription[]>([])
   const [criticalPatients, setCriticalPatients] = useState<Patient[]>([])
-  const doctorName = user?.displayName || user?.name || "Dr. Sarah Johnson";
+  const doctorName = user?.displayName || user?.name ;
 
   useEffect(() => {
     if (!db) return
@@ -26,16 +27,6 @@ export default function DoctorDashboard() {
       const mine = patients.filter((p) => p.assignedDoctor === doctorName)
       setMyPatients(mine)
       setCriticalPatients(mine.filter((p) => p.status === "critical"))
-    })
-    // Fetch appointments
-    getDocs(collection(db, "appointments")).then(snapshot => {
-      const today = new Date().toDateString()
-      const appointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment))
-      setTodayAppointments(
-        appointments.filter(
-          (a) => a.doctorName === doctorName && new Date(a.date).toDateString() === today
-        )
-      )
     })
     // Fetch prescriptions
     getDocs(collection(db, "prescriptions")).then(snapshot => {
@@ -68,18 +59,7 @@ export default function DoctorDashboard() {
 
         <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Today's Appointments</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{todayAppointments.length}</div>
-            <p className="text-xs text-muted-foreground">Scheduled for today</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Pending Prescriptions</CardTitle>
+            <CardTitle className="text-sm font-medium">Pending Prescriptions</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -99,6 +79,9 @@ export default function DoctorDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Quick Insights */}
+      <AIQuickInsights patients={myPatients} />
 
       {/* Critical Patients Alert */}
       {criticalPatients.length > 0 && (
@@ -130,87 +113,8 @@ export default function DoctorDashboard() {
         </Card>
       )}
 
-      {/* Today's Schedule */}
-      <Card className="bg-card">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between text-foreground">
-            <span className="flex items-center">
-              <Clock className="mr-2 h-5 w-5" />
-              Today's Schedule
-            </span>
-            <Button size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Appointment
-            </Button>
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">Your appointments for today</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {todayAppointments.length > 0 ? (
-            <div className="space-y-3">
-              {todayAppointments.map((appointment) => (
-                <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                  <div>
-                    <p className="font-medium text-foreground">{appointment.patientName}</p>
-                    <p className="text-sm text-muted-foreground">{appointment.type}</p>
-                    {appointment.notes && <p className="text-sm text-gray-500 dark:text-gray-400">{appointment.notes}</p>}
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-foreground">{appointment.time}</p>
-                    <Badge variant={appointment.status === "scheduled" ? "default" : "secondary"}>
-                      {appointment.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No appointments scheduled for today</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Recent Patients */}
-      <Card className="bg-card">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between text-foreground">
-            <span>My Patients</span>
-            <Button size="sm" variant="outline">
-              View All
-            </Button>
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">Patients under your care</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {myPatients.slice(0, 5).map((patient) => (
-              <div key={patient.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                <div>
-                  <p className="font-medium text-foreground">{patient.name}</p>
-                  <p className="text-sm text-muted-foreground">{patient.diagnosis}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Age: {patient.age} • Bed: {patient.assignedBed}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <Badge
-                    variant={
-                      patient.status === "critical"
-                        ? "destructive"
-                        : patient.status === "admitted"
-                          ? "default"
-                          : "secondary"
-                    }
-                  >
-                    {patient.status}
-                  </Badge>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">BP: {patient.vitals?.bloodPressure ?? "N/A"}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* AI Diagnostic Assistant */}
+      <AIDiagnosticAssistant />
 
       {/* Quick Actions */}
       <Card className="bg-card">
@@ -228,10 +132,7 @@ export default function DoctorDashboard() {
               <Users className="h-6 w-6 mb-2" />
               Patient Records
             </Button>
-            <Button variant="outline" className="h-20 flex-col bg-transparent">
-              <Calendar className="h-6 w-6 mb-2" />
-              Schedule Appointment
-            </Button>
+            
             <Button variant="outline" className="h-20 flex-col bg-transparent">
               <FileText className="h-6 w-6 mb-2" />
               Lab Reports

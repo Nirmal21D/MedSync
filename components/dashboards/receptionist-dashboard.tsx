@@ -7,10 +7,10 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Users, Calendar, Bed, Plus, Clock, Phone, Trash, Pencil } from "lucide-react"
+import { Users, Calendar, Bed, Plus, Phone, Trash, Pencil } from "lucide-react"
 import { collection, getDocs, addDoc, setDoc, doc, deleteDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import type { Patient, Appointment, Staff } from "@/lib/types"
+import type { Patient, Staff } from "@/lib/types"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { DialogTrigger } from "@/components/ui/dialog"
 
@@ -41,7 +41,6 @@ export default function ReceptionistDashboard() {
     assignedDoctor: "",
   })
   const [patients, setPatients] = useState<Patient[]>([])
-  const [appointments, setAppointments] = useState<Appointment[]>([])
   const [staff, setStaff] = useState<Staff[]>([])
   const [beds, setBeds] = useState<any[]>([])
   const [showAssignBed, setShowAssignBed] = useState(false)
@@ -56,9 +55,6 @@ export default function ReceptionistDashboard() {
     getDocs(collection(db, "patients")).then(snapshot => {
       setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)))
     })
-    getDocs(collection(db, "appointments")).then(snapshot => {
-      setAppointments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment)))
-    })
     getDocs(collection(db, "users")).then(snapshot => {
       setStaff(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff)))
     })
@@ -67,21 +63,6 @@ export default function ReceptionistDashboard() {
     })
   }, [])
 
-  const todayAppointments = appointments.filter(
-    (a) => {
-      // Defensive: ensure a.date is a valid date
-      let apptDate: Date | null = null;
-      if (a.date instanceof Date) {
-        apptDate = a.date;
-      } else if (typeof a.date === "string" || typeof a.date === "number") {
-        apptDate = new Date(a.date);
-      } else if (a.date && typeof a.date === "object" && 'seconds' in a.date) {
-        // Firestore Timestamp
-        apptDate = new Date((a.date as { seconds: number }).seconds * 1000);
-      }
-      return apptDate && apptDate.toDateString() === new Date().toDateString();
-    }
-  )
   const occupiedBeds = patients.filter((p) => p.assignedBed).length
   const doctors = staff.filter((s) => s.role === "doctor")
 
@@ -167,8 +148,8 @@ export default function ReceptionistDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Receptionist Dashboard</h1>
-        <p className="text-muted-foreground">Patient registration and appointment management</p>
+        <h1 className="text-3xl font-bold text-gray-900">Receptionist Dashboard</h1>
+        <p className="text-gray-600">Patient registration and bed management</p>
       </div>
 
       {/* Quick Stats */}
@@ -186,18 +167,7 @@ export default function ReceptionistDashboard() {
 
         <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Today's Appointments</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{todayAppointments.length}</div>
-            <p className="text-xs text-muted-foreground">Scheduled today</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Available Beds</CardTitle>
+            <CardTitle className="text-sm font-medium">Available Beds</CardTitle>
             <Bed className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -236,21 +206,7 @@ export default function ReceptionistDashboard() {
 
         <Card className="bg-card">
           <CardHeader>
-            <CardTitle className="flex items-center text-foreground">
-              <Calendar className="mr-2 h-5 w-5" />
-              Schedule Appointment
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full bg-transparent">
-              New Appointment
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card">
-          <CardHeader>
-            <CardTitle className="flex items-center text-foreground">
+            <CardTitle className="flex items-center">
               <Bed className="mr-2 h-5 w-5" />
               Assign Bed
             </CardTitle>
@@ -361,48 +317,6 @@ export default function ReceptionistDashboard() {
           </CardContent>
         </Card>
       )}
-
-      {/* Today's Appointments */}
-      <Card className="bg-card">
-        <CardHeader>
-          <CardTitle className="flex items-center text-foreground">
-            <Clock className="mr-2 h-5 w-5" />
-            Today's Appointments
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">Scheduled appointments for today</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {todayAppointments.length > 0 ? (
-            <div className="space-y-3">
-              {todayAppointments.map((appointment) => (
-                <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                  <div>
-                    <p className="font-medium text-foreground">{appointment.patientName}</p>
-                    <p className="text-sm text-muted-foreground">Dr. {appointment.doctorName}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{appointment.type}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-foreground">{appointment.time}</p>
-                    <Badge
-                      variant={
-                        appointment.status === "scheduled"
-                          ? "default"
-                          : appointment.status === "completed"
-                            ? "secondary"
-                            : "destructive"
-                      }
-                    >
-                      {appointment.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No appointments scheduled for today</p>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Bed Management */}
       <Card className="bg-card">

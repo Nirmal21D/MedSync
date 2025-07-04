@@ -705,7 +705,56 @@ export default function SettingsPage({ params }: { params: { role: string } }) {
             </Card>
           </TabsContent>
         </Tabs>
-        </div>
+
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Admin Billing Configuration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <Label>Bed Charge (₹)</Label>
+                <Input type="number" value={settings.billing?.bedCharge ?? 1000} min={0} onChange={e => setSettings(s => s ? { ...s, billing: { ...s.billing, bedCharge: Number(e.target.value) } } : s)} />
+              </div>
+              <div>
+                <Label>Consultation Charge (₹)</Label>
+                <Input type="number" value={settings.billing?.consultationCharge ?? 500} min={0} onChange={e => setSettings(s => s ? { ...s, billing: { ...s.billing, consultationCharge: Number(e.target.value) } } : s)} />
+              </div>
+              <div>
+                <Label>Service Types</Label>
+                <div className="space-y-2">
+                  {(settings.billing?.serviceTypes ?? []).map((service, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <Input value={service.name} onChange={e => setSettings(s => {
+                        if (!s) return s;
+                        const updated = [...(s.billing?.serviceTypes ?? [])];
+                        updated[idx] = { ...updated[idx], name: e.target.value };
+                        return { ...s, billing: { ...s.billing, serviceTypes: updated } };
+                      })} placeholder="Service Name" className="w-48" />
+                      <Input type="number" value={service.defaultPrice} min={0} onChange={e => setSettings(s => {
+                        if (!s) return s;
+                        const updated = [...(s.billing?.serviceTypes ?? [])];
+                        updated[idx] = { ...updated[idx], defaultPrice: Number(e.target.value) };
+                        return { ...s, billing: { ...s.billing, serviceTypes: updated } };
+                      })} className="w-32" />
+                      <Button size="sm" variant="destructive" onClick={() => setSettings(s => {
+                        if (!s) return s;
+                        const updated = (s.billing?.serviceTypes ?? []).filter((_, i) => i !== idx);
+                        return { ...s, billing: { ...s.billing, serviceTypes: updated } };
+                      })}>Remove</Button>
+                    </div>
+                  ))}
+                  <Button size="sm" variant="outline" onClick={() => setSettings(s => {
+                    if (!s) return s;
+                    const updated = [...(s.billing?.serviceTypes ?? []), { name: "", defaultPrice: 0 }];
+                    return { ...s, billing: { ...s.billing, serviceTypes: updated } };
+                  })}>Add Service Type</Button>
+                </div>
+              </div>
+              <Button className="mt-4" onClick={handleSave} disabled={isSaving}>{isSaving ? "Saving..." : "Save Billing Settings"}</Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   )

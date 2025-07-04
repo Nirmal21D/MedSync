@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Users, FileText, Clock, AlertCircle, Plus, Bell } from "lucide-react"
+import { Users, FileText, Clock, AlertCircle, Plus, Bell, Brain } from "lucide-react"
 import { collection, getDocs, setDoc, doc, updateDoc, arrayUnion } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/components/providers/auth-provider"
@@ -13,6 +13,8 @@ import type { Patient, NursingNote, MedicineReminder } from "@/lib/types"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 import { Firestore } from "firebase/firestore"
+import AIQuickInsights from "@/components/ai/ai-quick-insights"
+import AIPatientInsights from "@/components/ai/ai-patient-insights"
 
 export default function NurseDashboard() {
   const { user } = useAuth()
@@ -181,6 +183,9 @@ export default function NurseDashboard() {
         </Card>
       </div>
 
+      {/* AI Quick Insights */}
+      <AIQuickInsights patients={patients} />
+
       {/* Medicine Reminders - Enhanced Version */}
       <Card className="bg-card">
         <CardHeader>
@@ -243,8 +248,8 @@ export default function NurseDashboard() {
                     )}
                   </div>
                 </div>
-              ))
-            )}
+              )))
+            }
           </div>
         </CardContent>
       </Card>

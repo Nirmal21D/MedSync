@@ -20,6 +20,13 @@ export interface Patient {
   status: "admitted" | "discharged" | "critical"
   nursingNotes?: NursingNote[]
   documents?: PatientDocument[]
+  bills?: Array<{
+    id: string;
+    date: string;
+    items: Array<{ name: string; quantity: number; price: number }>;
+    total: number;
+    status: "paid" | "unpaid";
+  }>;
 }
 
 export interface NursingNote {
@@ -88,6 +95,11 @@ export interface SystemSettings {
     backupFrequency: "daily" | "weekly" | "monthly"
     retentionDays: number
   }
+  billing?: {
+    bedCharge: number;
+    consultationCharge: number;
+    serviceTypes: Array<{ name: string; defaultPrice: number }>;
+  };
 }
 
 export interface AnalyticsData {
@@ -136,18 +148,6 @@ export interface Prescription {
   processedBy?: string
 }
 
-export interface Appointment {
-  id: string
-  patientId: string
-  patientName: string
-  doctorId: string
-  doctorName: string
-  date: Date
-  time: string
-  type: "consultation" | "follow-up" | "emergency"
-  status: "scheduled" | "completed" | "cancelled"
-  notes?: string
-}
 
 export interface InventoryItem {
   id: string
