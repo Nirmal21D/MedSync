@@ -84,10 +84,10 @@ export default function BedManagementPage() {
 
   return (
     <DashboardLayout role="admin">
-      <div className="max-w-5xl mx-auto py-10 space-y-8">
+      <div className="relative space-y-6 theme-bg min-h-screen p-4 overflow-hidden">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2"><BedIcon className="h-7 w-7 text-blue-600" /> Bed Management</h1>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">Bed Management</h1>
             <p className="text-muted-foreground">Manage all hospital beds, add new beds, and filter by status, type, or ward.</p>
           </div>
           <Button onClick={() => setShowAddBed(true)} className="flex items-center gap-2">
