@@ -1,7 +1,7 @@
 from pathlib import Path
 
 # Content for the README.md file
-readme_content = """
+
 # 🏥 MedSync
 
 **Transforming Healthcare, Empowering Better Outcomes Daily**
