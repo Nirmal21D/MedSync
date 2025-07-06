@@ -62,3 +62,15 @@ MedSync is an all-in-one developer toolkit for building scalable, role-based hea
 1. **Clone the repository**
    ```bash
    git clone https://github.com/Nirmal21D/MedSync
+
+2. **Navigate to the project directory**
+   ```bash
+   cd MedSync
+
+4. **Install the dependencies**
+   ```bash
+   npm install
+
+5. **Start the project**
+   ```bash
+   npm run dev
