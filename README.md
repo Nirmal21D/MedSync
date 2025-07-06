@@ -1,7 +1,3 @@
-from pathlib import Path
-
-# Content for the README.md file
-
 # 🏥 MedSync
 
 **Transforming Healthcare, Empowering Better Outcomes Daily**
