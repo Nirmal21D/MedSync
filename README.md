@@ -1,72 +1,64 @@
-# MedSync
+from pathlib import Path
 
-A modern hospital management system with role-based dashboards and patient management.
+# Content for the README.md file
+readme_content = """
+# 🏥 MedSync
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/nirmaldarekarixkcgandhi-2939s-projects/v0-medsync-project)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/j8XgQuDDauq)
+**Transforming Healthcare, Empowering Better Outcomes Daily**
 
-## Overview
+MedSync is an all-in-one developer toolkit for building scalable, role-based healthcare management systems. It streamlines the development of complex hospital applications by providing solid architecture, real-time data integration, and AI-powered insights.
 
-MedSync is a full-featured hospital management platform supporting multiple roles:
-- **Doctor**: Manage assigned patients, add/edit/discharge, view/add notes, update vitals, manage prescriptions and appointments, update patient history.
-- **Nurse**: View assigned patients, update vitals, add nursing notes.
-- **Receptionist**: Register new patients, assign doctors/beds, manage appointments.
-- **Pharmacist**: View and process prescriptions.
-- **Admin**: Manage staff, beds, and inventory.
-- **Lab Doctor**: Generate lab reports for patients.
-- **MD (Medical Doctor)**: eSign operation documents.
-- **Other Roles**: Request lab reports for patients.
+---
 
-## Key Features
+## 🚀 Features
 
-- **Role-based Dashboards**: Each user sees a dashboard tailored to their role.
-- **Patient Management**: Add, edit, discharge, and search patients. Doctors can update patient history and add notes.
-- **Vitals Tracking**: Vitals (BP, HR, Temp, O2) can be updated and viewed.
-- **Appointments & Prescriptions**: Schedule and manage appointments, create and process prescriptions.
-- **Bed Management**: Assign and manage beds for patients.
-- **Conditional UI**: Special actions based on role:
-  - Lab Doctor: "Generate Report" button
-  - MD: "eSign Operation Doc" button
-  - Others: "Request Lab Report" button
-- **Firestore Integration**: All data is persisted in Firebase Firestore.
+- 🎨 **Component Architecture**  
+  Standardized UI elements, Tailwind CSS configurations, and icon libraries for consistent styling.
 
-## Getting Started
+- 👥 **Role-Based Dashboards**  
+  Tailored interfaces for admins, doctors, nurses, and staff, with real-time Firebase Firestore integration.
 
-1. **Clone the repository:**
+- 🤖 **AI-Powered Insights**  
+  Seamless integration with Google Gemini for patient risk assessments, diagnostics, and clinical decision support.
+
+- 🧩 **Modular UI Components**  
+  Buttons, dialogs, forms, navigation, and more—designed for accessibility and responsiveness.
+
+- 🧰 **Developer-Friendly Utilities**  
+  Utility functions for styling, notifications, and state management to accelerate development.
+
+---
+
+## 🛠️ Built With
+
+- **Languages**: TypeScript, JavaScript, YAML
+- **Libraries & Tools**:  
+  `React`, `Firebase`, `Zod`, `date-fns`, `React Hook Form`, `Tailwind CSS`, `PostCSS`, `Autoprefixer`  
+- **Formats**: `JSON`, `Markdown`  
+- **Package Manager**: `npm`
+
+---
+
+## 📚 Table of Contents
+
+- [Overview](#-medsync)
+- [Features](#-features)
+- [Built With](#-built-with)
+- [Getting Started](#-getting-started)
+- [Usage](#-usage)
+- [Testing](#-testing)
+
+---
+
+## 🧑‍💻 Getting Started
+
+### Prerequisites
+
+- Programming Language: **TypeScript**
+- Package Manager: **npm**
+
+### Installation
+
+1. **Clone the repository**
    ```bash
-   git clone <repo-url>
-   cd MedSync
-   ```
-2. **Install dependencies:**
-   ```bash
-   npm install
-   # or
-   pnpm install
-   ```
-3. **Set up Firebase:**
-   - Add your Firebase config to `lib/firebase.ts`.
-4. **Run locally:**
-   ```bash
-   npm run dev
-   # or
-   pnpm dev
-   ```
-
-## Deployment
-
-Your project is live at:
-
-**[https://vercel.com/nirmaldarekarixkcgandhi-2939s-projects/v0-medsync-project](https://vercel.com/nirmaldarekarixkcgandhi-2939s-projects/v0-medsync-project)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.dev/chat/projects/j8XgQuDDauq](https://v0.dev/chat/projects/j8XgQuDDauq)**
-
-## How It Works
-
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+   git clone https://github.com/Nirmal21D/MedSync
