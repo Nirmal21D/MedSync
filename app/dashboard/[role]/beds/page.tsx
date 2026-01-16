@@ -515,10 +515,12 @@ export default function BedManagementPage({ params }: { params: Promise<{ role: 
                       </Button>
                     </>
                   )}
-                  <Button size="sm" variant="outline" onClick={() => handleMaintenanceToggle(bed.id)}>
-                    <Wrench className="mr-1 h-3 w-3" />
-                    {bed.status === "maintenance" ? "Fix" : "Maintenance"}
-                  </Button>
+                  {bed.status !== "occupied" && (
+  <Button size="sm" variant="outline" onClick={() => handleMaintenanceToggle(bed.id)}>
+    <Wrench className="mr-1 h-3 w-3" />
+    {bed.status === "maintenance" ? "Fix" : "Maintenance"}
+  </Button>
+)}
                 </div>
               </CardContent>
             </Card>
