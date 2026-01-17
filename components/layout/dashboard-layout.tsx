@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/components/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,11 +21,17 @@ import {
   ClipboardList,
   Sun,
   Moon,
+  TestTube,
+  DollarSign,
+  Mic,
+  Clock,
+  Receipt,
 } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
+import { NotificationCenter } from "@/components/notifications/notification-center"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -35,8 +41,14 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const { theme, setTheme } = useTheme()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const getNavigationItems = (userRole: string) => {
     const baseItems = [{ name: "Dashboard", href: `/dashboard/${userRole}`, icon: BarChart3 }]
@@ -48,14 +60,18 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           { name: "Staff Management", href: `/dashboard/${userRole}/staff`, icon: Users },
           { name: "Inventory", href: `/dashboard/${userRole}/inventory`, icon: Package },
           { name: "Bed Management", href: `/dashboard/${userRole}/bed-management`, icon: Bed },
+          { name: "Billing & Checkout", href: `/dashboard/${userRole}/billing`, icon: Receipt },
+          { name: "Revenue Integrity", href: `/dashboard/${userRole}/revenue-integrity`, icon: DollarSign },
           { name: "Analytics", href: `/dashboard/${userRole}/analytics`, icon: BarChart3 },
           { name: "Settings", href: `/dashboard/${userRole}/settings`, icon: Settings },
         ]
       case "doctor":
         return [
           ...baseItems,
+          { name: "OPD Management", href: `/dashboard/${userRole}/appointments`, icon: Calendar },
           { name: "Patients", href: `/dashboard/${userRole}/patients`, icon: Users },
           { name: "Prescriptions", href: `/dashboard/${userRole}/prescriptions`, icon: FileText },
+          { name: "Lab Orders", href: `/dashboard/${userRole}/lab-orders`, icon: TestTube },
         ]
       case "nurse":
         return [
@@ -69,11 +85,26 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           { name: "Prescriptions", href: `/dashboard/${userRole}/prescriptions`, icon: FileText },
           { name: "Inventory", href: `/dashboard/${userRole}/inventory`, icon: Package },
         ]
+      case "lab-staff":
+        return [
+          ...baseItems,
+          { name: "Prescriptions", href: `/dashboard/${userRole}/prescriptions`, icon: FileText },
+          { name: "Lab Orders", href: `/dashboard/${userRole}/lab-orders`, icon: TestTube },
+        ]
       case "receptionist":
         return [
           ...baseItems,
+          { name: "OPD Management", href: `/dashboard/${userRole}/opd-management`, icon: Calendar },
+          { name: "Billing & Checkout", href: `/dashboard/${userRole}/billing`, icon: Receipt },
           { name: "Patients", href: `/dashboard/${userRole}/patients`, icon: Users },
           { name: "Bed Management", href: `/dashboard/${userRole}/beds`, icon: Bed },
+        ]
+      case "patient":
+        return [
+          ...baseItems,
+          { name: "Book Appointment", href: `/dashboard/${userRole}/appointments/book`, icon: Calendar },
+          { name: "My Appointments", href: `/dashboard/${userRole}/appointments`, icon: Calendar },
+          { name: "Voice Booking", href: `/dashboard/${userRole}/voice-booking`, icon: Mic },
         ]
       default:
         return baseItems
@@ -85,12 +116,24 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
   const handleLogout = async () => {
     try {
       await logout()
+      router.push("/login")
     } catch (error) {
       console.error("Logout failed:", error)
     }
   }
 
   function ThemeToggle() {
+    if (!mounted) {
+      return (
+        <button
+          aria-label="Toggle theme"
+          className="ml-2 p-2 rounded-full hover:bg-muted transition-colors"
+        >
+          <div className="w-5 h-5" />
+        </button>
+      )
+    }
+
     return (
       <button
         aria-label="Toggle theme"
@@ -211,6 +254,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
               <span className="text-sm text-muted-foreground">
                 Welcome back, <span className="font-medium">{user?.name || "User"}</span>
               </span>
+              <NotificationCenter />
               <ThemeToggle />
             </div>
           </div>

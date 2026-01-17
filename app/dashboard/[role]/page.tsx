@@ -9,6 +9,7 @@ import DoctorDashboard from "@/components/dashboards/doctor-dashboard"
 import NurseDashboard from "@/components/dashboards/nurse-dashboard"
 import PharmacistDashboard from "@/components/dashboards/pharmacist-dashboard"
 import ReceptionistDashboard from "@/components/dashboards/receptionist-dashboard"
+import PatientDashboard from "@/components/dashboards/patient-dashboard"
 import React from "react"
 
 export default function DashboardPage({ params }: { params: Promise<{ role: string }> }) {
@@ -46,6 +47,8 @@ export default function DashboardPage({ params }: { params: Promise<{ role: stri
         return <PharmacistDashboard />
       case "receptionist":
         return <ReceptionistDashboard />
+      case "patient":
+        return <PatientDashboard />
       default:
         return <div>Invalid role</div>
     }

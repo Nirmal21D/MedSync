@@ -19,6 +19,7 @@ const DEMO_USERS = [
   { email: "nurse1@gmail.com", role: "nurse" },
   { email: "pharmacist1@gmail.com", role: "pharmacist" },
   { email: "receptionist1@gmail.com", role: "receptionist" },
+  { email: "patient@gmail.com", role: "patient" },
 ] as const
 
 interface User extends FirebaseUser {
@@ -68,63 +69,93 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     return unsub
-  }, [])
+  }, [router])
 
   const login = async (email: string, password: string) => {
-    // --- 1️⃣  PREVIEW MODE ----------------------------------------------
+    // --- 1️⃣  PREVIEW MODE (No Firebase credentials) -------------------
     if (!auth || !db) {
-      // No Firebase credentials => treat as demo sign-in
       const match = DEMO_USERS.find((u) => u.email === email)
+      if (!match) {
+        throw new Error("Invalid credentials")
+      }
+      
       setUser({
-        uid: email, // just reuse email as fake UID
+        uid: email,
         email,
-        role: match?.role,
-        displayName: email.split("@")[0],
-        status: "active", // or "inactive" if you want to simulate
+        role: match.role,
+        displayName: match.role.charAt(0).toUpperCase() + match.role.slice(1),
+        name: match.role.charAt(0).toUpperCase() + match.role.slice(1) + " Demo",
+        status: "active",
       } as User)
+      
+      // Redirect based on role
+      if (match.role === "patient") {
+        router.push("/dashboard/patient")
+      } else {
+        router.push(`/dashboard/${match.role}`)
+      }
       return
     }
 
-    // --- 2️⃣  REAL FIREBASE ---------------------------------------------
-    if (!auth || !db) return;
+    // --- 2️⃣  REAL FIREBASE MODE (With credentials) --------------------
     try {
       const result = await signInWithEmailAndPassword(auth, email, password)
 
       // Fetch user data from Firestore
-      const snap = await getDoc(doc(db, "users", result.user.uid))
-      const data = snap.data()
-      if (data?.status === "inactive") {
-        if (auth) await firebaseSignOut(auth)
+      const userDoc = await getDoc(doc(db, "users", result.user.uid))
+      const userData = userDoc.data()
+      
+      // Check if user is inactive
+      if (userData?.status === "inactive") {
+        await firebaseSignOut(auth)
         router.push("/inactive")
         return
       }
-      setUser({ ...result.user, role: data?.role, name: data?.name, status: data?.status })
-      // Persist / update role on Firestore
+
+      // Set user with role and name
+      setUser({ 
+        ...result.user, 
+        role: userData?.role || "patient", 
+        name: userData?.name || result.user.displayName || email.split("@")[0], 
+        status: userData?.status || "active" 
+      })
+
+      // Update last login
       await setDoc(
         doc(db, "users", result.user.uid),
         {
           email: result.user.email,
-          name: result.user.displayName ?? email.split("@")[0],
+          name: userData?.name || result.user.displayName || email.split("@")[0],
+          role: userData?.role || "patient",
           lastLogin: new Date(),
+          status: userData?.status || "active",
         },
-        { merge: true },
+        { merge: true }
       )
+
+      // Redirect based on role
+      const userRole = userData?.role || "patient"
+      router.push(`/dashboard/${userRole}`)
+      
     } catch (error: any) {
-      // If we're using demo credentials in a real Firebase project that
-      // does not contain those users – silently fall back.
-      if (error.code === "auth/invalid-credential") {
+      // Fallback to demo mode for demo credentials
+      if (error.code === "auth/invalid-credential" || error.code === "auth/user-not-found") {
         const match = DEMO_USERS.find((u) => u.email === email)
-        if (match) {
+        if (match && password === "1234567890") {
           setUser({
             uid: email,
             email,
             role: match.role,
-            displayName: email.split("@")[0],
+            displayName: match.role.charAt(0).toUpperCase() + match.role.slice(1),
+            name: match.role.charAt(0).toUpperCase() + match.role.slice(1) + " Demo",
             status: "active",
           } as User)
+          
+          router.push(`/dashboard/${match.role}`)
           return
         }
       }
+      
       console.error("Login error:", error)
       throw error
     }
@@ -135,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await firebaseSignOut(auth)
     }
     setUser(null) // always clear local state
+    router.push("/login") // redirect to login page
   }
 
   return <AuthContext.Provider value={{ user, login, logout, loading }}>{children}</AuthContext.Provider>

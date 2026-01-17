@@ -83,7 +83,7 @@ PATIENT PROFILE:
 - Gender: ${patient.gender}
 - Primary Diagnosis: ${patient.diagnosis}
 - Current Status: ${patient.status}
-- Admission Date: ${new Date(patient.admissionDate).toLocaleDateString()}
+- Admission Date: ${patient.admissionDate ? new Date(patient.admissionDate).toLocaleDateString() : 'Not available'}
 
 VITAL SIGNS:
 - Blood Pressure: ${patient.vitals?.bloodPressure || 'Not recorded'}
@@ -439,7 +439,7 @@ PATIENT PROFILE:
 - Age: ${patient.age}, Gender: ${patient.gender}
 - Diagnosis: ${patient.diagnosis}
 - Status: ${patient.status}
-- Admission: ${new Date(patient.admissionDate).toLocaleDateString()}
+- Admission: ${patient.admissionDate ? new Date(patient.admissionDate).toLocaleDateString() : 'Not available'}
 - Vitals: ${JSON.stringify(patient.vitals)}
 - History: ${patient.history?.join(', ') || 'None'}
 

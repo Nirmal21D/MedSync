@@ -6,7 +6,7 @@ import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import DashboardLayout from "@/components/layout/dashboard-layout"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -21,10 +21,14 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { FileText, Plus, Search, CheckCircle, X, Clock, User, Calendar, Pill } from "lucide-react"
-import { collection, getDocs, setDoc, doc, updateDoc, getDoc, arrayUnion } from "firebase/firestore"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Separator } from "@/components/ui/separator"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { FileText, Plus, Search, CheckCircle, X, Clock, User, Calendar, Pill, Camera, Activity, AlertCircle } from "lucide-react"
+import { collection, getDocs, setDoc, doc, updateDoc, getDoc, arrayUnion, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import type { Prescription, Patient, InventoryItem } from "@/lib/types"
+import type { Prescription, Patient, InventoryItem, Appointment } from "@/lib/types"
 import { Firestore } from "firebase/firestore"
 
 // Utility to safely format a date value (handles Date, Firestore Timestamp, string, number)
@@ -60,6 +64,13 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
   const approveDialogPrescriptionRef = useRef<Prescription | null>(null)
   const [allInventory, setAllInventory] = useState<InventoryItem[]>([])
   const [fallbackInventorySelection, setFallbackInventorySelection] = useState<{ [medicineName: string]: string }>({})
+  
+  // Patient scanner state
+  const [uhidInput, setUhidInput] = useState("")
+  const [scannedPatient, setScannedPatient] = useState<Patient | null>(null)
+  const [patientPrescriptions, setPatientPrescriptions] = useState<Prescription[]>([])
+  const [patientAppointments, setPatientAppointments] = useState<Appointment[]>([])
+  const [searching, setSearching] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -94,8 +105,9 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
     // Role-based filtering
     if (role === "doctor") {
       filtered = prescriptions.filter((p) => p.doctorName === "Dr. Sarah Johnson")
-    } else if (role === "pharmacist") {
-      // Pharmacists see all prescriptions
+    } else if (role === "pharmacist" || role === "lab-staff") {
+      // Pharmacists and lab staff see all prescriptions
+      // No additional filtering needed
     }
 
     // Search filtering
@@ -117,6 +129,112 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
   }
 
   const filteredPrescriptions = getFilteredPrescriptions()
+
+  const searchPatient = async () => {
+    if (!uhidInput.trim()) return
+
+    setSearching(true)
+    try {
+      if (!db) {
+        // Demo mode
+        setScannedPatient({
+          id: "demo-patient-1",
+          uhid: uhidInput,
+          name: "John Doe",
+          age: 35,
+          gender: "male",
+          phone: "9876543210",
+          email: "john@demo.com",
+          address: "123 Demo Street, Mumbai",
+          status: "stable",
+          diagnosis: "Hypertension",
+          history: ["Diabetes Type 2 (2020)", "Hypertension (2022)"],
+          vitals: {
+            bloodPressure: "130/85",
+            heartRate: 78,
+            temperature: 98.6,
+            oxygenSaturation: 98
+          },
+          medicalHistory: [
+            { condition: "Diabetes Type 2", diagnosedDate: "2020-05-15", notes: "Controlled with medication" },
+            { condition: "Hypertension", diagnosedDate: "2022-03-20", notes: "Monitoring required" }
+          ]
+        } as Patient)
+        
+        setPatientPrescriptions([
+          {
+            id: "rx1",
+            patientId: "demo-patient-1",
+            patientName: "John Doe",
+            doctorId: "doc1",
+            doctorName: "Dr. Smith",
+            medicines: [
+              { name: "Metformin 500mg", dosage: "500mg", frequency: "Twice daily", duration: "30 days" },
+              { name: "Amlodipine 5mg", dosage: "5mg", frequency: "Once daily", duration: "30 days" }
+            ],
+            status: "approved",
+            createdAt: new Date("2024-12-15"),
+            notes: "Continue current medication"
+          }
+        ] as Prescription[])
+        
+        setPatientAppointments([
+          {
+            id: "apt1",
+            patientId: "demo-patient-1",
+            patientName: "John Doe",
+            doctorId: "doc1",
+            doctorName: "Dr. Smith",
+            department: "Cardiology",
+            date: new Date("2024-12-20"),
+            timeSlot: "10:00",
+            status: "completed",
+            type: "consultation",
+            reason: "Follow-up checkup"
+          } as any
+        ])
+        
+        setSearching(false)
+        return
+      }
+
+      // Search by UHID
+      const patientsRef = collection(db, "patients")
+      const q = query(patientsRef, where("uhid", "==", uhidInput.toUpperCase()))
+      const snapshot = await getDocs(q)
+
+      if (!snapshot.empty) {
+        const patientData = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Patient
+        setScannedPatient(patientData)
+
+        // Fetch prescriptions
+        const rxRef = collection(db, "prescriptions")
+        const rxQuery = query(rxRef, where("patientId", "==", patientData.id))
+        const rxSnapshot = await getDocs(rxQuery)
+        setPatientPrescriptions(rxSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Prescription)))
+
+        // Fetch appointments
+        const aptRef = collection(db, "appointments")
+        const aptQuery = query(aptRef, where("patientId", "==", patientData.id))
+        const aptSnapshot = await getDocs(aptQuery)
+        setPatientAppointments(aptSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment)))
+      } else {
+        setScannedPatient(null)
+        setPatientPrescriptions([])
+        setPatientAppointments([])
+        alert("Patient not found with UHID: " + uhidInput)
+      }
+    } catch (error) {
+      console.error("Error searching patient:", error)
+      alert("Error searching for patient")
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  const handleScan = () => {
+    alert("Barcode scanner would open here. For demo, please enter UHID manually.")
+  }
 
   const handleAddPrescription = async (newPrescription: Partial<Prescription>) => {
     // Early return if db or required data is missing
@@ -152,6 +270,7 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
       id: String(Date.now()),
       patientId: patientData.id, 
       patientName: newPrescription.patientName,
+      patientUhid: patientData.uhid || `UHID-${Date.now()}`,
       doctorId,
       doctorName,
       medicines: newPrescription.medicines || [],
@@ -414,6 +533,281 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
             </Dialog>
           )}
         </div>
+
+        {/* Patient Scanner Section - For all roles */}
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Scan Patient UHID
+            </CardTitle>
+            <CardDescription>
+              Scan or enter patient UHID to view complete medical history
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Enter UHID (e.g., UHID-202601-00001)"
+                  value={uhidInput}
+                  onChange={(e) => setUhidInput(e.target.value.toUpperCase())}
+                  onKeyPress={(e) => e.key === "Enter" && searchPatient()}
+                  className="pl-10"
+                />
+              </div>
+              <Button onClick={handleScan} variant="outline">
+                <Camera className="h-4 w-4 mr-2" />
+                Scan
+              </Button>
+              <Button onClick={searchPatient} disabled={searching || !uhidInput.trim()}>
+                {searching ? "Searching..." : "Search"}
+              </Button>
+            </div>
+
+            {scannedPatient && (
+              <div className="mt-6 space-y-4">
+                {/* Patient Header */}
+                <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
+                  <Avatar className="h-16 w-16">
+                    <AvatarFallback className="text-lg">
+                      {scannedPatient.name.split(" ").map(n => n[0]).join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-xl font-semibold">{scannedPatient.name}</h3>
+                        <p className="text-sm text-muted-foreground">UHID: {scannedPatient.uhid}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge variant={scannedPatient.status === "stable" ? "default" : "destructive"}>
+                          {scannedPatient.status}
+                        </Badge>
+                        <Badge variant="outline">{scannedPatient.age}Y/{scannedPatient.gender.charAt(0).toUpperCase()}</Badge>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      <p>📞 {scannedPatient.phone}</p>
+                      <p>📧 {scannedPatient.email}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Vitals Cards */}
+                {scannedPatient.vitals && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card>
+                      <CardContent className="pt-4">
+                        <div className="text-center">
+                          <Activity className="h-5 w-5 mx-auto mb-2 text-red-500" />
+                          <p className="text-xs text-muted-foreground">Blood Pressure</p>
+                          <p className="text-lg font-semibold">{scannedPatient.vitals.bloodPressure}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-4">
+                        <div className="text-center">
+                          <Activity className="h-5 w-5 mx-auto mb-2 text-pink-500" />
+                          <p className="text-xs text-muted-foreground">Heart Rate</p>
+                          <p className="text-lg font-semibold">{scannedPatient.vitals.heartRate} bpm</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-4">
+                        <div className="text-center">
+                          <Activity className="h-5 w-5 mx-auto mb-2 text-orange-500" />
+                          <p className="text-xs text-muted-foreground">Temperature</p>
+                          <p className="text-lg font-semibold">{scannedPatient.vitals.temperature}°F</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-4">
+                        <div className="text-center">
+                          <Activity className="h-5 w-5 mx-auto mb-2 text-blue-500" />
+                          <p className="text-xs text-muted-foreground">O2 Saturation</p>
+                          <p className="text-lg font-semibold">{scannedPatient.vitals.oxygenSaturation}%</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {/* Patient Information Tabs */}
+                <Tabs defaultValue="history" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="history">Medical History</TabsTrigger>
+                    <TabsTrigger value="prescriptions">Prescriptions ({patientPrescriptions.length})</TabsTrigger>
+                    <TabsTrigger value="appointments">Appointments ({patientAppointments.length})</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="history" className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Diagnosis</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm">{scannedPatient.diagnosis || "No diagnosis recorded"}</p>
+                      </CardContent>
+                    </Card>
+
+                    {scannedPatient.medicalHistory && scannedPatient.medicalHistory.length > 0 ? (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Past Medical History</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {scannedPatient.medicalHistory.map((item, idx) => (
+                            <div key={idx} className="border-l-2 border-primary pl-4">
+                              <h4 className="font-semibold">{item.condition}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Diagnosed: {new Date(item.diagnosedDate).toLocaleDateString()}
+                              </p>
+                              {item.notes && <p className="text-sm mt-1">{item.notes}</p>}
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    ) : scannedPatient.history && scannedPatient.history.length > 0 ? (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Medical History</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <ul className="space-y-2">
+                            {scannedPatient.history.map((item, idx) => (
+                              <li key={idx} className="text-sm flex items-start gap-2">
+                                <span className="text-primary">•</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>No medical history recorded</AlertDescription>
+                      </Alert>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="prescriptions" className="space-y-4">
+                    {patientPrescriptions.length > 0 ? (
+                      patientPrescriptions.map((rx) => (
+                        <Card key={rx.id}>
+                          <CardHeader>
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-lg">Dr. {rx.doctorName}</CardTitle>
+                              <Badge variant={
+                                rx.status === "approved" ? "default" :
+                                rx.status === "pending" ? "secondary" : "destructive"
+                              }>
+                                {rx.status}
+                              </Badge>
+                            </div>
+                            <CardDescription>
+                              {new Date(rx.createdAt).toLocaleDateString()}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              {rx.medicines.map((med, idx) => (
+                                <div key={idx} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                                  <Pill className="h-5 w-5 mt-0.5 text-primary" />
+                                  <div className="flex-1">
+                                    <p className="font-semibold">{med.name}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {med.dosage} • {med.frequency} • {med.duration}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                              {rx.notes && (
+                                <div className="mt-3 pt-3 border-t">
+                                  <p className="text-sm text-muted-foreground">
+                                    <strong>Notes:</strong> {rx.notes}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>No prescriptions found</AlertDescription>
+                      </Alert>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="appointments" className="space-y-4">
+                    {patientAppointments.length > 0 ? (
+                      patientAppointments.map((apt) => (
+                        <Card key={apt.id}>
+                          <CardContent className="pt-6">
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-1">
+                                <p className="font-semibold">{apt.doctorName}</p>
+                                <p className="text-sm text-muted-foreground">{apt.department}</p>
+                                <div className="flex items-center gap-4 mt-2">
+                                  <span className="text-sm flex items-center gap-1">
+                                    <Calendar className="h-4 w-4" />
+                                    {new Date(apt.appointmentDate).toLocaleDateString()}
+                                  </span>
+                                  <span className="text-sm flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    {apt.timeSlot}
+                                  </span>
+                                </div>
+                                {apt.reason && (
+                                  <p className="text-sm text-muted-foreground mt-2">
+                                    Reason: {apt.reason}
+                                  </p>
+                                )}
+                              </div>
+                              <Badge variant={
+                                apt.status === "completed" ? "default" :
+                                apt.status === "scheduled" ? "secondary" : "outline"
+                              }>
+                                {apt.status}
+                              </Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>No appointments found</AlertDescription>
+                      </Alert>
+                    )}
+                  </TabsContent>
+                </Tabs>
+
+                {/* Quick Actions */}
+                {role === "doctor" && (
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button onClick={() => {
+                      setShowAddPrescription(true)
+                      // You could pre-fill the patient name here
+                    }}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Prescription for {scannedPatient.name}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Separator />
 
         {/* Filters */}
         <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
