@@ -23,6 +23,7 @@ export default function BedManagementPage() {
     type: "general",
     status: "available",
     features: "",
+    numberOfBeds: "1", // New field for bulk creation
   })
   const [addBedStatus, setAddBedStatus] = useState<string | null>(null)
   const [addBedLoading, setAddBedLoading] = useState(false)
@@ -36,7 +37,6 @@ export default function BedManagementPage() {
     setLoading(true)
     if (!db) return
     let q = collection(db, "beds")
-    // Filtering can be added here if needed
     const snapshot = await getDocs(q)
     setBeds(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bed)))
     setLoading(false)
@@ -44,27 +44,76 @@ export default function BedManagementPage() {
 
   const handleAddBed = async () => {
     if (!db) return
-    if (!newBed.number || !newBed.ward || !newBed.floor || !newBed.type) {
+    if (!newBed.ward || !newBed.floor || !newBed.type || !newBed.numberOfBeds) {
       setAddBedStatus("Please fill all required fields.")
       return
     }
+
+    const numBeds = parseInt(newBed.numberOfBeds)
+    if (isNaN(numBeds) || numBeds < 1 || numBeds > 100) {
+      setAddBedStatus("Number of beds must be between 1 and 100.")
+      return
+    }
+
     setAddBedLoading(true)
     try {
-      const bedId = `${newBed.ward}-${newBed.number}`.replace(/\s+/g, "-").toLowerCase()
-      await setDoc(doc(db, "beds", bedId), {
-        number: newBed.number,
-        ward: newBed.ward,
-        floor: Number(newBed.floor),
-        type: newBed.type,
-        status: newBed.status,
-        features: newBed.features ? newBed.features.split(",").map(f => f.trim()) : [],
+      // Get first letter of ward for bed naming
+      const wardPrefix = newBed.ward.trim().charAt(0).toUpperCase()
+      const floor = newBed.floor
+      
+      // Find existing beds with same ward and floor to determine starting number
+      const existingBeds = beds.filter(
+        bed => bed.ward.toLowerCase() === newBed.ward.toLowerCase() && 
+               bed.floor.toString() === floor
+      )
+      
+      // Extract numbers from existing bed numbers to find the highest
+      let startNumber = 1
+      if (existingBeds.length > 0) {
+        const numbers = existingBeds.map(bed => {
+          const match = bed.number.match(/\d+$/)
+          return match ? parseInt(match[0]) : 0
+        })
+        startNumber = Math.max(...numbers) + 1
+      }
+
+      // Create multiple beds
+      const bedPromises = []
+      for (let i = 0; i < numBeds; i++) {
+        const bedNumber = `${wardPrefix}-${floor}${String(startNumber + i).padStart(2, '0')}`
+        const bedId = `${newBed.ward}-${bedNumber}`.replace(/\s+/g, "-").toLowerCase()
+        
+        bedPromises.push(
+          setDoc(doc(db, "beds", bedId), {
+            number: bedNumber,
+            ward: newBed.ward,
+            floor: Number(newBed.floor),
+            type: newBed.type,
+            status: newBed.status,
+            features: newBed.features ? newBed.features.split(",").map(f => f.trim()) : [],
+          })
+        )
+      }
+
+      await Promise.all(bedPromises)
+      
+      setAddBedStatus(`Successfully added ${numBeds} bed(s)!`)
+      setNewBed({ 
+        number: "", 
+        ward: "", 
+        floor: "", 
+        type: "general", 
+        status: "available", 
+        features: "",
+        numberOfBeds: "1"
       })
-      setAddBedStatus("Bed added successfully!")
-      setNewBed({ number: "", ward: "", floor: "", type: "general", status: "available", features: "" })
       fetchBeds()
-      setTimeout(() => setShowAddBed(false), 1200)
+      setTimeout(() => {
+        setShowAddBed(false)
+        setAddBedStatus(null)
+      }, 1500)
     } catch (err) {
-      setAddBedStatus("Failed to add bed. Please try again.")
+      setAddBedStatus("Failed to add bed(s). Please try again.")
     } finally {
       setAddBedLoading(false)
     }
@@ -83,8 +132,12 @@ export default function BedManagementPage() {
     <div className="max-w-5xl mx-auto py-10 space-y-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><BedIcon className="h-7 w-7 text-blue-600" /> Bed Management</h1>
-          <p className="text-gray-600 dark:text-gray-300">Manage all hospital beds, add new beds, and filter by status, type, or ward.</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <BedIcon className="h-7 w-7 text-blue-600" /> Bed Management
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            Manage all hospital beds, add new beds, and filter by status, type, or ward.
+          </p>
         </div>
         <Button onClick={() => setShowAddBed(true)} className="flex items-center gap-2">
           <Plus className="h-4 w-4" /> Add Bed
@@ -175,13 +228,21 @@ export default function BedManagementPage() {
       <Dialog open={showAddBed} onOpenChange={setShowAddBed}>
         <DialogContent className="bg-white dark:bg-gray-900 shadow-lg">
           <DialogHeader>
-            <DialogTitle>Add New Bed</DialogTitle>
-            <DialogDescription>Enter bed details to add a new bed to the system.</DialogDescription>
+            <DialogTitle>Add New Bed(s)</DialogTitle>
+            <DialogDescription>Enter bed details to add new bed(s) to the system.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Bed Number</Label>
-              <Input value={newBed.number} onChange={e => setNewBed({ ...newBed, number: e.target.value })} placeholder="e.g. A-101" />
+              <Label>Number of Beds</Label>
+              <Input 
+                type="number" 
+                min="1"
+                max="100"
+                value={newBed.numberOfBeds} 
+                onChange={e => setNewBed({ ...newBed, numberOfBeds: e.target.value })} 
+                placeholder="e.g. 5" 
+              />
+              <p className="text-xs text-gray-500 mt-1">Beds will be auto-numbered (e.g., C-101, C-102...)</p>
             </div>
             <div>
               <Label>Ward</Label>
@@ -223,14 +284,16 @@ export default function BedManagementPage() {
               <Label>Features (comma separated)</Label>
               <Input value={newBed.features} onChange={e => setNewBed({ ...newBed, features: e.target.value })} placeholder="e.g. Oxygen Supply, Cardiac Monitor" />
             </div>
-            {addBedStatus && <div className={`text-sm ${addBedStatus.includes('success') ? 'text-green-600' : 'text-red-600'}`}>{addBedStatus}</div>}
+            {addBedStatus && <div className={`text-sm ${addBedStatus.includes('success') || addBedStatus.includes('Successfully') ? 'text-green-600' : 'text-red-600'}`}>{addBedStatus}</div>}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowAddBed(false)}>Cancel</Button>
-              <Button onClick={handleAddBed} disabled={addBedLoading}>{addBedLoading ? "Adding..." : "Add Bed"}</Button>
+              <Button onClick={handleAddBed} disabled={addBedLoading}>
+                {addBedLoading ? "Adding..." : `Add Bed${parseInt(newBed.numberOfBeds) > 1 ? 's' : ''}`}
+              </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
     </div>
   )
-} 
+}
