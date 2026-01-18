@@ -27,7 +27,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FileText, Plus, Search, CheckCircle, X, Clock, User, Calendar, Pill, Camera, Activity, AlertCircle } from "lucide-react"
 import { MedicineAutocomplete } from "@/components/prescriptions/medicine-autocomplete"
-import { collection, getDocs, setDoc, doc, updateDoc, getDoc, arrayUnion, query, where } from "firebase/firestore"
+import { collection, getDocs, setDoc, doc, updateDoc, getDoc, arrayUnion, query, where, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Prescription, Patient, InventoryItem, Appointment } from "@/lib/types"
 import { Firestore } from "firebase/firestore"
@@ -82,7 +82,9 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
       console.log("Firestore initialized:", !!db)
       console.log("Firestore app:", db.app?.name)
       
-      getDocs(collection(db, "prescriptions")).then(snapshot => {
+
+      // Real-time listener for prescriptions
+      const unsubscribePrescriptions = onSnapshot(collection(db, "prescriptions"), (snapshot) => {
         const prescriptionsList = snapshot.docs.map(doc => {
           const data = doc.data()
           return {
@@ -93,10 +95,11 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
         })
         setPrescriptions(prescriptionsList)
         console.log("Loaded prescriptions:", prescriptionsList.length)
-      }).catch(error => {
+      }, (error) => {
         console.error("Error loading prescriptions:", error)
       })
-      
+
+      // Fetch patients (can remain one-time fetch or switch to real-time if needed)
       getDocs(collection(db, "patients")).then(snapshot => {
         setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)))
       }).catch(error => {
@@ -108,6 +111,8 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
       }).catch(error => {
         console.error("Error loading inventory:", error)
       })
+
+      return () => unsubscribePrescriptions()
     } else {
       console.warn("Firestore database not initialized. Check Firebase configuration.")
     }
@@ -128,7 +133,12 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
 
     // Role-based filtering
     if (role === "doctor") {
-      filtered = prescriptions.filter((p) => p.doctorName === "Dr. Sarah Johnson")
+      // Filter by doctor ID if current user is a doctor
+      if (user) {
+        // Handle various user object structures safely
+        const userId = 'id' in user ? String(user.id) : 'uid' in user ? String(user.uid) : "";
+        filtered = prescriptions.filter((p) => p.doctorId === userId)
+      }
     } else if (role === "pharmacist" || role === "lab-staff") {
       // Pharmacists and lab staff see all prescriptions
       // No additional filtering needed
@@ -353,7 +363,7 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
       console.log("Prescription written to Firestore successfully:", prescription.id)
 
       // Update local state
-      setPrescriptions([...prescriptions, prescription])
+      // setPrescriptions([...prescriptions, prescription]) // No need to manually update, onSnapshot will handle it
       setShowAddPrescription(false)
 
       // Show success message
