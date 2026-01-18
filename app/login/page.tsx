@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useAuth } from "@/components/providers/auth-provider"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -49,10 +50,11 @@ export default function LoginPage() {
   // Demo credentials for testing
   const demoCredentials = [
     { role: "admin", email: "admin@gmail.com", password: "1234567890" },
-    { role: "doctor", email: "doctor1@gmail.com", password: "1234567890" },
+    { role: "doctor", email: "adityamak707@gmail.com", password: "1234567890" },
     { role: "nurse", email: "nurse1@gmail.com", password: "1234567890" },
     { role: "pharmacist", email: "pharmacist1@gmail.com", password: "1234567890" },
     { role: "receptionist", email: "receptionist1@gmail.com", password: "1234567890" },
+    { role: "patient", email: "demouser1@gmail.com", password: "123456789" },
   ]
 
   const fillDemoCredentials = (demoRole: string) => {
@@ -140,6 +142,14 @@ export default function LoginPage() {
               <Button type="submit" className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold shadow-md hover:from-emerald-600 hover:to-emerald-700 border-0" disabled={isLoading || !email || !password}>
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
+
+              {/* Sign Up Link */}
+              <div className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
+                New patient?{" "}
+                <Link href="/signup" className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 font-semibold">
+                  Create an account
+                </Link>
+              </div>
             </form>
 
             <div className="mt-6">

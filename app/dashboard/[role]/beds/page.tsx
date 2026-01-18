@@ -126,7 +126,7 @@ export default function BedManagementPage({ params }: { params: Promise<{ role: 
       const patientData = patientSnap.data();
       const bills = Array.isArray(patientData.bills) ? patientData.bills : [];
       // Prevent duplicate bed bills for the same bed/admission
-      const hasBedBill = bills.some(bill => bill.items.some(item => item.name === "Bed Charge" && item.bedId === bedId));
+      const hasBedBill = bills.some(bill => bill.items.some((item: any) => item.name === "Bed Charge" && item.bedId === bedId));
       if (!hasBedBill) {
         bills.push({
           id: `bed-${bedId}-${Date.now()}`,

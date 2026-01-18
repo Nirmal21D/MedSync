@@ -104,7 +104,7 @@ export default function DoctorDashboard() {
                   </div>
                   <div className="text-right">
                     <Badge variant="destructive">Critical</Badge>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Temp: {patient.vitals.temperature}°F</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Temp: {patient.vitals?.temperature || 'N/A'}°F</p>
                   </div>
                 </div>
               ))}

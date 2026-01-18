@@ -160,19 +160,19 @@ export default function AIPatientDetails() {
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-3 border rounded">
-                    <p className="text-2xl font-bold">{patient.vitals.bloodPressure}</p>
+                    <p className="text-2xl font-bold">{patient.vitals?.bloodPressure || 'N/A'}</p>
                     <p className="text-sm text-gray-600">Blood Pressure</p>
                   </div>
                   <div className="text-center p-3 border rounded">
-                    <p className="text-2xl font-bold">{patient.vitals.heartRate}</p>
+                    <p className="text-2xl font-bold">{patient.vitals?.heartRate || 'N/A'}</p>
                     <p className="text-sm text-gray-600">Heart Rate</p>
                   </div>
                   <div className="text-center p-3 border rounded">
-                    <p className="text-2xl font-bold">{patient.vitals.temperature}°F</p>
+                    <p className="text-2xl font-bold">{patient.vitals?.temperature ? `${patient.vitals.temperature}°F` : 'N/A'}</p>
                     <p className="text-sm text-gray-600">Temperature</p>
                   </div>
                   <div className="text-center p-3 border rounded">
-                    <p className="text-2xl font-bold">{patient.vitals.oxygenSaturation}%</p>
+                    <p className="text-2xl font-bold">{patient.vitals?.oxygenSaturation ? `${patient.vitals.oxygenSaturation}%` : 'N/A'}</p>
                     <p className="text-sm text-gray-600">Oxygen Sat</p>
                   </div>
                 </div>

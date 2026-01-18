@@ -457,15 +457,35 @@ function AddStaffForm({
     phone: "",
     password: "",
     salary: "",
+    opdAvailable: false,
+    opdStartTime: "09:00",
+    opdEndTime: "17:00",
+    opdSlotDuration: 30,
+    opdMaxPatients: 20,
+    opdDays: [] as string[],
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit({
+    const staffData: any = {
       ...formData,
       salary: formData.salary !== "" ? Number(formData.salary) : undefined,
       role: (formData.role ? formData.role : "doctor") as "admin" | "doctor" | "nurse" | "pharmacist" | "receptionist",
-    })
+    }
+    
+    // Add OPD data for doctors
+    if (formData.role === "doctor" && formData.opdAvailable) {
+      staffData.opdAvailable = true
+      staffData.opdTimings = {
+        days: formData.opdDays,
+        startTime: formData.opdStartTime,
+        endTime: formData.opdEndTime,
+        slotDuration: formData.opdSlotDuration,
+        maxPatientsPerDay: formData.opdMaxPatients,
+      }
+    }
+    
+    onSubmit(staffData)
   }
 
   return (
@@ -554,6 +574,26 @@ function AddStaffForm({
           />
         </div>
       </div>
+      
+      {/* OPD Settings (for doctors only) */}
+      {formData.role === "doctor" && (
+        <div className="space-y-4 border-t pt-4">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="opdAvailable"
+              checked={formData.opdAvailable}
+              onChange={(e) => setFormData({ ...formData, opdAvailable: e.target.checked })}
+              className="h-4 w-4"
+            />
+            <Label htmlFor="opdAvailable" className="font-semibold">Enable OPD Availability</Label>
+          </div>
+          <p className="text-sm text-muted-foreground pl-6">
+            Doctor can configure their own OPD timings and schedule from their dashboard.
+          </p>
+        </div>
+      )}
+      
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
@@ -581,6 +621,12 @@ function EditStaffForm({
     department: staff.department,
     phone: staff.phone,
     salary: staff.salary !== undefined ? String(staff.salary) : "",
+    opdAvailable: staff.opdAvailable || false,
+    opdStartTime: staff.opdTimings?.startTime || "09:00",
+    opdEndTime: staff.opdTimings?.endTime || "17:00",
+    opdSlotDuration: staff.opdTimings?.slotDuration || 30,
+    opdMaxPatients: staff.opdTimings?.maxPatientsPerDay || 20,
+    opdDays: staff.opdTimings?.days || [],
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -595,6 +641,22 @@ function EditStaffForm({
       phone: formData.phone,
       salary: formData.salary !== "" ? Number(formData.salary) : undefined,
     }
+    
+    // Add OPD data for doctors
+    if (formData.role === "doctor" && formData.opdAvailable) {
+      updatedStaff.opdAvailable = true
+      updatedStaff.opdTimings = {
+        days: formData.opdDays as any,
+        startTime: formData.opdStartTime,
+        endTime: formData.opdEndTime,
+        slotDuration: formData.opdSlotDuration,
+        maxPatientsPerDay: formData.opdMaxPatients,
+      }
+    } else if (formData.role === "doctor") {
+      updatedStaff.opdAvailable = false
+      updatedStaff.opdTimings = undefined
+    }
+    
     onSubmit(updatedStaff)
   }
 
@@ -674,6 +736,26 @@ function EditStaffForm({
           />
         </div>
       </div>
+      
+      {/* OPD Settings (for doctors only) */}
+      {formData.role === "doctor" && (
+        <div className="space-y-4 border-t pt-4">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="edit-opdAvailable"
+              checked={formData.opdAvailable}
+              onChange={(e) => setFormData({ ...formData, opdAvailable: e.target.checked })}
+              className="h-4 w-4"
+            />
+            <Label htmlFor="edit-opdAvailable" className="font-semibold">Enable OPD Availability</Label>
+          </div>
+          <p className="text-sm text-muted-foreground pl-6">
+            Doctor can configure their own OPD timings and schedule from their dashboard.
+          </p>
+        </div>
+      )}
+      
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel

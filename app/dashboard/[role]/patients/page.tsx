@@ -21,11 +21,14 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Search, Plus, Eye, FileText, Heart, Phone, MapPin, Calendar, Activity } from "lucide-react"
+import { Search, Plus, Eye, FileText, Heart, Phone, MapPin, Calendar, Activity, Scan, QrCode } from "lucide-react"
 import { collection, getDocs, setDoc, doc, updateDoc, deleteField } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Patient, Staff } from "@/lib/types"
 import { askGeminiServer } from "@/lib/gemini"
+import { generateUHID } from "@/lib/uhid"
+import BarcodeScanner from "@/components/BarcodeScanner"
+import PatientBarcodeCard from "@/components/PatientBarcodeCard"
 
 export default function PatientsPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
@@ -47,6 +50,10 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
   const [doctors, setDoctors] = useState<Staff[]>([])
   const [summary, setSummary] = useState<string | null>(null)
   const [loadingSummary, setLoadingSummary] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
+  const [scannedUHID, setScannedUHID] = useState("")
+  const [showPatientDetails, setShowPatientDetails] = useState(false)
+  const [detailsPatient, setDetailsPatient] = useState<Patient | null>(null)
 
   useEffect(() => {
     (async () => {
@@ -91,13 +98,14 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
       filtered = patients // In real app, filter by assigned nurse
     }
 
-    // Search filtering
+    // Search filtering - now includes UHID
     if (searchTerm) {
       filtered = filtered.filter(
         (p) =>
           p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.phone.includes(searchTerm),
+          (p.diagnosis && p.diagnosis.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          p.phone.includes(searchTerm) ||
+          (p.uhid && p.uhid.toLowerCase().includes(searchTerm.toLowerCase())),
       )
     }
 
@@ -109,12 +117,26 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
     return filtered
   }
 
+  const handleUHIDScan = (uhid: string) => {
+    setScannedUHID(uhid)
+    setSearchTerm(uhid)
+    setShowScanner(false)
+    
+    // Find patient by UHID and open details
+    const patient = patients.find(p => p.uhid === uhid)
+    if (patient) {
+      setDetailsPatient(patient)
+      setShowPatientDetails(true)
+    }
+  }
+
   const filteredPatients = getFilteredPatients()
 
   const handleAddPatient = async (newPatient: Partial<Patient>) => {
     if (!db) return
     const patient: Patient = {
       id: String(Date.now()),
+      uhid: generateUHID(), // Auto-generate UHID
       name: newPatient.name || "",
       age: newPatient.age || 0,
       gender: (newPatient.gender as "male" | "female" | "other") || "male",
@@ -199,7 +221,7 @@ Temperature: ${selectedPatient.vitals?.temperature || 'Not recorded'}°F
 Oxygen Saturation: ${selectedPatient.vitals?.oxygenSaturation || 'Not recorded'}%
 
 MEDICAL HISTORY:
-${selectedPatient.history?.length > 0 ? selectedPatient.history.join('\n') : 'No recorded history'}
+${selectedPatient.history && selectedPatient.history.length > 0 ? selectedPatient.history.join('\n') : 'No recorded history'}
 
 Please provide a comprehensive summary in plain text format (NO asterisks, NO markdown) organized as follows:
 
@@ -263,23 +285,29 @@ Use clear, professional language without any special formatting characters.`;
                       : "Manage hospital patients"}
                 </p>
               </div>
-              {(role === "receptionist" || role === "doctor") && (
-                <Dialog open={showAddPatient} onOpenChange={setShowAddPatient}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Patient
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl glass-card bg-card backdrop-blur-xl shadow-lg">
-                    <DialogHeader>
-                      <DialogTitle>Add New Patient</DialogTitle>
-                      <DialogDescription>Enter patient information for registration</DialogDescription>
-                    </DialogHeader>
-                    <AddPatientForm onSubmit={handleAddPatient} onCancel={() => setShowAddPatient(false)} doctors={doctors} />
-                  </DialogContent>
-                </Dialog>
-              )}
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowScanner(true)}>
+                  <Scan className="mr-2 h-4 w-4" />
+                  Scan Barcode
+                </Button>
+                {(role === "receptionist" || role === "doctor") && (
+                  <Dialog open={showAddPatient} onOpenChange={setShowAddPatient}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Patient
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl glass-card bg-card backdrop-blur-xl shadow-lg">
+                      <DialogHeader>
+                        <DialogTitle>Add New Patient</DialogTitle>
+                        <DialogDescription>Enter patient information for registration</DialogDescription>
+                      </DialogHeader>
+                      <AddPatientForm onSubmit={handleAddPatient} onCancel={() => setShowAddPatient(false)} doctors={doctors} />
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
             </div>
 
             {/* Filters */}
@@ -429,7 +457,7 @@ Use clear, professional language without any special formatting characters.`;
                           <div className="mb-4">
                             <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">Medical History</p>
                             <div className="space-y-1">
-                              {patient.history.slice(0, 2).map((item, index) => (
+                              {patient.history?.slice(0, 2).map((item, index) => (
                                 <p key={index} className="text-sm text-gray-600 dark:text-gray-300">
                                   • {item}
                                 </p>
@@ -448,6 +476,7 @@ Use clear, professional language without any special formatting characters.`;
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto glass-card bg-card backdrop-blur-xl shadow-lg">
+                            <DialogTitle className="sr-only">Patient Details</DialogTitle>
                             <PatientDetailsModal patient={patient} role={role} onUpdateHistory={async (updatedHistory) => {
                               if (!db) return;
                               await setDoc(doc(db, "patients", patient.id), { history: updatedHistory }, { merge: true });
@@ -532,6 +561,48 @@ Use clear, professional language without any special formatting characters.`;
                     <Button variant="outline" onClick={() => setShowAddNote(false)}>Cancel</Button>
                     <Button onClick={handleAddNote} disabled={!noteContent.trim()}>Add Note</Button>
                   </div>
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {/* Barcode Scanner Dialog */}
+            {showScanner && (
+              <Dialog open={showScanner} onOpenChange={setShowScanner}>
+                <DialogContent className="glass-card bg-card backdrop-blur-xl shadow-lg">
+                  <DialogHeader>
+                    <DialogTitle className="sr-only">Scan Patient Barcode</DialogTitle>
+                  </DialogHeader>
+                  <BarcodeScanner
+                    onScan={handleUHIDScan}
+                    onClose={() => setShowScanner(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {/* Patient Details Dialog (from barcode scan) */}
+            {showPatientDetails && detailsPatient && (
+              <Dialog
+                open={showPatientDetails}
+                onOpenChange={(open) => {
+                  setShowPatientDetails(open);
+                  if (!open) setDetailsPatient(null);
+                }}
+              >
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto glass-card bg-card backdrop-blur-xl shadow-lg">
+                  <DialogHeader>
+                    <DialogTitle className="sr-only">Patient Details</DialogTitle>
+                  </DialogHeader>
+                  <PatientDetailsModal 
+                    patient={detailsPatient} 
+                    role={role} 
+                    onUpdateHistory={async (updatedHistory) => {
+                      if (!db) return;
+                      await setDoc(doc(db, "patients", detailsPatient.id), { history: updatedHistory }, { merge: true });
+                      setPatients(patients.map((p) => (p.id === detailsPatient.id ? { ...p, history: updatedHistory } : p)));
+                      setDetailsPatient({ ...detailsPatient, history: updatedHistory });
+                    }} 
+                  />
                 </DialogContent>
               </Dialog>
             )}
@@ -772,7 +843,7 @@ Temperature: ${patient.vitals?.temperature || 'Not recorded'}°F
 Oxygen Saturation: ${patient.vitals?.oxygenSaturation || 'Not recorded'}%
 
 MEDICAL HISTORY:
-${patient.history?.length > 0 ? patient.history.join('\n') : 'No recorded history'}
+${(patient.history?.length ?? 0) > 0 ? patient.history!.join('\n') : 'No recorded history'}
 
 Please provide a comprehensive summary in plain text format (NO asterisks, NO markdown) organized as follows:
 
@@ -950,6 +1021,18 @@ Use clear, professional language without any special formatting characters.`;
         </Card>
       </div>
 
+      {/* Patient Barcode Card */}
+      {patient.uhid && (
+        <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg text-gray-900 dark:text-white">Patient Identification Card</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PatientBarcodeCard patient={patient} />
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
         <CardHeader>
           <CardTitle className="text-lg text-gray-900 dark:text-white">Current Vitals</CardTitle>
@@ -976,14 +1059,14 @@ Use clear, professional language without any special formatting characters.`;
         </CardContent>
       </Card>
 
-      {patient.history?.length > 0 && (
+      {(patient.history?.length ?? 0) > 0 && (
         <Card className="glass-card bg-card backdrop-blur-xl shadow-lg">
           <CardHeader>
             <CardTitle className="text-lg text-gray-900 dark:text-white">Medical History</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
-              {patient.history.map((item, index) => (
+              {patient.history?.map((item, index) => (
                 <li key={index} className="flex items-start gap-2 text-gray-900 dark:text-white">
                   <span className="text-gray-400 mr-2">•</span>
                   {role === "doctor" && editingHistoryIndex === index ? (

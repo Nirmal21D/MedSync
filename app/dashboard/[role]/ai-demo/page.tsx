@@ -20,6 +20,7 @@ export default function AIServiceDemo() {
   // Sample patient data for demo
   const samplePatient = {
     id: "demo-001",
+    uhid: "UHID-202601-00001",
     name: "John Doe",
     age: 65,
     gender: "male" as const,
