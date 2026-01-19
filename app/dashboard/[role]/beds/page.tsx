@@ -16,6 +16,7 @@ import { Bed, Search, User, MapPin, Calendar, Settings, UserPlus, UserMinus, Wre
 import { collection, getDocs, setDoc, doc, updateDoc, deleteField, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Bed as BedType, Patient } from "@/lib/types"
+import { cleanForFirestore } from "@/lib/firestore-utils"
 
 // Helper function to fetch patients from Firestore
 async function fetchPatientsFromFirestore(): Promise<Patient[]> {
@@ -138,10 +139,26 @@ export default function BedManagementPage({ params }: { params: Promise<{ role: 
         await setDoc(patientRef, { bills }, { merge: true });
       }
     }
-    await setDoc(doc(db, "patients", patientId), {
-      ...patients.find((p) => p.id === patientId),
+    const patientData = patients.find((p) => p.id === patientId)
+    if (!patientData) return
+    
+    // Build update object
+    const updateData: Record<string, any> = {
+      ...patientData,
       assignedBed: bedId,
-    })
+      status: "admitted",
+      // Reset discharge flags for readmission
+      dischargeInitiated: false,
+      dischargeCompleted: false,
+      dischargeInitiatedAt: null,
+      dischargeInitiatedBy: null,
+      dischargeCompletedAt: null,
+      bedAssignedAt: new Date(),
+      admissionDate: new Date(),
+    }
+    
+    // Remove undefined values before saving
+    await setDoc(doc(db, "patients", patientId), cleanForFirestore(updateData), { merge: true })
     setShowAssignPatient(false)
     setSelectedBed(null)
     // Refetch patients and beds after assignment to keep in sync

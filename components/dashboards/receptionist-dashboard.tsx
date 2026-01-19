@@ -11,6 +11,7 @@ import { Users, Calendar, Bed, Plus, Phone, Trash, Pencil } from "lucide-react"
 import { collection, getDocs, addDoc, setDoc, doc, deleteDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Patient, Staff } from "@/lib/types"
+import { cleanForFirestore } from "@/lib/firestore-utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { DialogTrigger } from "@/components/ui/dialog"
 
@@ -115,11 +116,24 @@ export default function ReceptionistDashboard() {
       patientId: patient.id,
       patientName: patient.name,
     })
-    // Optionally update patient in Firestore
-    await setDoc(doc(db, "patients", patient.id), {
+    // Update patient in Firestore - reset discharge flags for readmission
+    // Build update object
+    const updateData: Record<string, any> = {
       ...patient,
       assignedBed: bed.number,
-    }, { merge: true })
+      status: "admitted",
+      // Reset discharge flags for readmission
+      dischargeInitiated: false,
+      dischargeCompleted: false,
+      dischargeInitiatedAt: null,
+      dischargeInitiatedBy: null,
+      dischargeCompletedAt: null,
+      bedAssignedAt: new Date(),
+      admissionDate: patient.admissionDate || new Date(),
+    }
+    
+    // Remove undefined values before saving
+    await setDoc(doc(db, "patients", patient.id), cleanForFirestore(updateData), { merge: true })
     // Refresh lists
     const bedsSnap = await getDocs(collection(db, "beds"))
     setBeds(bedsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })))

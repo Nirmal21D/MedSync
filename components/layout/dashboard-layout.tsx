@@ -26,6 +26,7 @@ import {
   Mic,
   Clock,
   Receipt,
+  CheckCircle,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -95,7 +96,9 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
         return [
           ...baseItems,
           { name: "OPD Management", href: `/dashboard/${userRole}/opd-management`, icon: Calendar },
+          { name: "Bed Requests", href: `/dashboard/${userRole}/bed-requests`, icon: Bed },
           { name: "Billing & Checkout", href: `/dashboard/${userRole}/billing`, icon: Receipt },
+          { name: "Discharge Management", href: `/dashboard/${userRole}/discharge-management`, icon: CheckCircle },
           { name: "Patients", href: `/dashboard/${userRole}/patients`, icon: Users },
           { name: "Bed Management", href: `/dashboard/${userRole}/beds`, icon: Bed },
         ]
