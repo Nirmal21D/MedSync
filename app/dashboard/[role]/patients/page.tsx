@@ -29,6 +29,9 @@ import { askGeminiServer } from "@/lib/gemini"
 import { generateUHID } from "@/lib/uhid"
 import BarcodeScanner from "@/components/BarcodeScanner"
 import PatientBarcodeCard from "@/components/PatientBarcodeCard"
+import { initiateDischarge, canDoctorInitiateDischarge } from "@/lib/discharge-utils"
+import { useToast } from "@/hooks/use-toast"
+import { cleanForFirestore } from "@/lib/firestore-utils"
 
 export default function PatientsPage({ params }: { params: Promise<{ role: string }> }) {
   const { user, loading } = useAuth()
@@ -54,6 +57,8 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
   const [scannedUHID, setScannedUHID] = useState("")
   const [showPatientDetails, setShowPatientDetails] = useState(false)
   const [detailsPatient, setDetailsPatient] = useState<Patient | null>(null)
+  const [initiatingDischarge, setInitiatingDischarge] = useState<string | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     (async () => {
@@ -134,18 +139,15 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
 
   const handleAddPatient = async (newPatient: Partial<Patient>) => {
     if (!db) return
-    const patient: Patient = {
+    const patientData: Record<string, any> = {
       id: String(Date.now()),
       uhid: generateUHID(), // Auto-generate UHID
       name: newPatient.name || "",
       age: newPatient.age || 0,
       gender: (newPatient.gender as "male" | "female" | "other") || "male",
       phone: newPatient.phone || "",
-      email: newPatient.email,
       address: newPatient.address || "",
-      diagnosis: newPatient.diagnosis || "",
       assignedDoctor: newPatient.assignedDoctor || "",
-      assignedBed: newPatient.assignedBed,
       vitals: {
         bloodPressure: "120/80",
         heartRate: 72,
@@ -164,14 +166,27 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
         status: "unpaid"
       }],
     }
-    await setDoc(doc(db, "patients", patient.id), patient)
+    
+    // Only include optional fields if they have values
+    if (newPatient.email) {
+      patientData.email = newPatient.email
+    }
+    if (newPatient.diagnosis) {
+      patientData.diagnosis = newPatient.diagnosis
+    }
+    if (newPatient.assignedBed) {
+      patientData.assignedBed = newPatient.assignedBed
+    }
+    
+    const patient = patientData as Patient
+    await setDoc(doc(db, "patients", patient.id), cleanForFirestore(patientData))
     setPatients([...patients, patient])
     setShowAddPatient(false)
   }
 
   const handleEditPatient = async (updated: Patient) => {
     if (!db) return
-    await setDoc(doc(db, "patients", updated.id), updated, { merge: true })
+    await setDoc(doc(db, "patients", updated.id), cleanForFirestore(updated as Record<string, any>), { merge: true })
     setPatients(patients.map((p) => (p.id === updated.id ? updated : p)))
     setShowEditPatient(false)
     setEditPatientData(null)
@@ -179,10 +194,40 @@ export default function PatientsPage({ params }: { params: Promise<{ role: strin
 
   const handleDischargePatient = async (id: string) => {
     if (!db) return
+    // Old direct discharge - only for non-doctors or if workflow not implemented
     await setDoc(doc(db, "patients", id), { status: "discharged", assignedBed: deleteField() }, { merge: true })
     setPatients(patients.map((p) => (p.id === id ? { ...p, status: "discharged", assignedBed: undefined } : p)))
     setShowDischargeConfirm(false)
     setDischargePatientId(null)
+  }
+
+  // New discharge initiation workflow for doctors
+  const handleInitiateDischarge = async (patientId: string) => {
+    if (!db || !user) return
+    
+    setInitiatingDischarge(patientId)
+    try {
+      const doctorId = user.displayName || user.name || user.uid
+      await initiateDischarge(patientId, doctorId)
+      
+      // Refresh patient data
+      const snapshot = await getDocs(collection(db, "patients"))
+      setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)))
+      
+      toast({
+        title: "Discharge Initiated",
+        description: "Patient discharge has been initiated. Receptionist will proceed with billing.",
+      })
+    } catch (error: any) {
+      console.error("Error initiating discharge:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to initiate discharge. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setInitiatingDischarge(null)
+    }
   }
 
   const handleAddNote = async () => {
@@ -221,7 +266,9 @@ Temperature: ${selectedPatient.vitals?.temperature || 'Not recorded'}°F
 Oxygen Saturation: ${selectedPatient.vitals?.oxygenSaturation || 'Not recorded'}%
 
 MEDICAL HISTORY:
-${selectedPatient.history && selectedPatient.history.length > 0 ? selectedPatient.history.join('\n') : 'No recorded history'}
+${selectedPatient.history && selectedPatient.history.length > 0 
+  ? selectedPatient.history.map((item: any) => typeof item === 'string' ? item : (item?.name || JSON.stringify(item))).join('\n') 
+  : 'No recorded history'}
 
 Please provide a comprehensive summary in plain text format (NO asterisks, NO markdown) organized as follows:
 
@@ -457,11 +504,17 @@ Use clear, professional language without any special formatting characters.`;
                           <div className="mb-4">
                             <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">Medical History</p>
                             <div className="space-y-1">
-                              {patient.history?.slice(0, 2).map((item, index) => (
-                                <p key={index} className="text-sm text-gray-600 dark:text-gray-300">
-                                  • {item}
-                                </p>
-                              ))}
+                              {patient.history?.slice(0, 2).map((item, index) => {
+                                // Handle both string and object formats
+                                const displayText = typeof item === 'string' 
+                                  ? item 
+                                  : (item as any)?.name || JSON.stringify(item)
+                                return (
+                                  <p key={index} className="text-sm text-gray-600 dark:text-gray-300">
+                                    • {displayText}
+                                  </p>
+                                )
+                              })}
                             </div>
                           </div>
                         )}
@@ -490,7 +543,25 @@ Use clear, professional language without any special formatting characters.`;
                             <Button variant="outline" size="sm" onClick={() => { setEditPatientData(patient); setShowEditPatient(true); }}>
                               Edit
                             </Button>
-                            {patient.status !== "discharged" && (
+                            {patient.status === "admitted" && 
+                             !(patient as any).dischargeInitiated && 
+                             !(patient as any).dischargeCompleted &&
+                             canDoctorInitiateDischarge(patient, user?.displayName || user?.name || "") && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleInitiateDischarge(patient.id)}
+                                disabled={initiatingDischarge === patient.id}
+                              >
+                                {initiatingDischarge === patient.id ? "Initiating..." : "Initiate Discharge"}
+                              </Button>
+                            )}
+                            {(patient as any).dischargeInitiated && !(patient as any).dischargeCompleted && (
+                              <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                Discharge Initiated – Awaiting Billing
+                              </Badge>
+                            )}
+                            {patient.status !== "admitted" && patient.status !== "discharged" && (
                               <Button variant="outline" size="sm" onClick={() => { setDischargePatientId(patient.id); setShowDischargeConfirm(true); }}>
                                 Discharge
                               </Button>
@@ -843,7 +914,9 @@ Temperature: ${patient.vitals?.temperature || 'Not recorded'}°F
 Oxygen Saturation: ${patient.vitals?.oxygenSaturation || 'Not recorded'}%
 
 MEDICAL HISTORY:
-${(patient.history?.length ?? 0) > 0 ? patient.history!.join('\n') : 'No recorded history'}
+${(patient.history?.length ?? 0) > 0 
+  ? patient.history!.map((item: any) => typeof item === 'string' ? item : (item?.name || JSON.stringify(item))).join('\n') 
+  : 'No recorded history'}
 
 Please provide a comprehensive summary in plain text format (NO asterisks, NO markdown) organized as follows:
 
@@ -1066,35 +1139,43 @@ Use clear, professional language without any special formatting characters.`;
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
-              {patient.history?.map((item, index) => (
-                <li key={index} className="flex items-start gap-2 text-gray-900 dark:text-white">
-                  <span className="text-gray-400 mr-2">•</span>
-                  {role === "doctor" && editingHistoryIndex === index ? (
-                    <>
-                      <Input
-                        value={editingHistoryValue}
-                        onChange={e => setEditingHistoryValue(e.target.value)}
-                        className="w-auto flex-1"
-                        autoFocus
-                      />
-                      <Button size="sm" onClick={() => handleEditHistory(index, editingHistoryValue)} disabled={!editingHistoryValue.trim()}>
-                        Save
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => { setEditingHistoryIndex(null); setEditingHistoryValue("") }}>Cancel</Button>
-                    </>
-                  ) : (
-                    <>
-                      <span>{item}</span>
-                      {role === "doctor" && (
-                        <>
-                          <Button size="sm" variant="ghost" onClick={() => { setEditingHistoryIndex(index); setEditingHistoryValue(item) }}>Edit</Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteHistory(index)}>Delete</Button>
-                        </>
-                      )}
-                    </>
-                  )}
-                </li>
-              ))}
+              {patient.history?.map((item, index) => {
+                // Handle both string and object formats
+                const itemText = typeof item === 'string' 
+                  ? item 
+                  : (item as any)?.name || JSON.stringify(item)
+                const itemString = typeof item === 'string' ? item : itemText
+                
+                return (
+                  <li key={index} className="flex items-start gap-2 text-gray-900 dark:text-white">
+                    <span className="text-gray-400 mr-2">•</span>
+                    {role === "doctor" && editingHistoryIndex === index ? (
+                      <>
+                        <Input
+                          value={editingHistoryValue}
+                          onChange={e => setEditingHistoryValue(e.target.value)}
+                          className="w-auto flex-1"
+                          autoFocus
+                        />
+                        <Button size="sm" onClick={() => handleEditHistory(index, editingHistoryValue)} disabled={!editingHistoryValue.trim()}>
+                          Save
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => { setEditingHistoryIndex(null); setEditingHistoryValue("") }}>Cancel</Button>
+                      </>
+                    ) : (
+                      <>
+                        <span>{itemText}</span>
+                        {role === "doctor" && (
+                          <>
+                            <Button size="sm" variant="ghost" onClick={() => { setEditingHistoryIndex(index); setEditingHistoryValue(itemString) }}>Edit</Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteHistory(index)}>Delete</Button>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </CardContent>
         </Card>

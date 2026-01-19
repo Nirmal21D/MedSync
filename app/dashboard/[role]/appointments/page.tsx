@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Clock, User, Phone, Search, CheckCircle, X, AlertCircle, Save, Settings, FileText } from "lucide-react"
-import { collection, getDocs, query, where, updateDoc, doc, getDoc, setDoc } from "firebase/firestore"
+import { Calendar, Clock, User, Phone, Search, CheckCircle, X, AlertCircle, Save, Settings, FileText, Bed } from "lucide-react"
+import { collection, getDocs, query, where, updateDoc, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/components/providers/auth-provider"
 import type { Appointment, Staff } from "@/lib/types"
@@ -32,6 +32,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { generateBillFromAppointment, saveBill } from "@/lib/billing-utils"
 import type { Prescription } from "@/lib/types"
 import { addDoc } from "firebase/firestore"
+import { autoRegisterPatientFromAppointment } from "@/lib/patient-registration"
 
 export default function DoctorAppointmentsPage({ params }: { params: Promise<{ role: string }> }) {
   const { user } = useAuth()
@@ -283,27 +284,80 @@ export default function DoctorAppointmentsPage({ params }: { params: Promise<{ r
   }
 
   const handleStartConsultation = async (appointment: Appointment) => {
+    if (!user || !db) return
+    
     try {
-      if (db) {
-        await updateDoc(doc(db, "appointments", appointment.id), { 
-          status: "in-progress",
-          consultationStartTime: new Date()
-        })
-      }
+      const doctorId = user.uid
+      const doctorName = user.displayName || user.name || "Doctor"
+      
+      // STEP 1: Auto-register patient (idempotent)
+      const registeredPatientId = await autoRegisterPatientFromAppointment(
+        appointment,
+        doctorId,
+        doctorName
+      )
+      
+      // STEP 2: Update appointment status
+      await updateDoc(doc(db, "appointments", appointment.id), { 
+        status: "in-progress",
+        consultationStartTime: new Date(),
+        patientId: registeredPatientId // Ensure patientId is set
+      })
       
       setAppointments(prev =>
-        prev.map(apt => apt.id === appointment.id ? { ...apt, status: "in-progress" } : apt)
+        prev.map(apt => apt.id === appointment.id ? { 
+          ...apt, 
+          status: "in-progress",
+          patientId: registeredPatientId
+        } : apt)
       )
       
       toast({
         title: "Consultation Started",
-        description: `Consultation with ${appointment.patientName} has begun`,
+        description: `Patient ${appointment.patientName} registered under you. Consultation has begun.`,
       })
     } catch (error) {
       console.error("Error starting consultation:", error)
       toast({
         title: "Error",
-        description: "Failed to start consultation",
+        description: error instanceof Error ? error.message : "Failed to start consultation",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleRequestBed = async (appointment: Appointment) => {
+    if (!user || !db) return
+    
+    try {
+      const doctorId = user.uid
+      
+      await updateDoc(doc(db, "appointments", appointment.id), {
+        bedRequested: true,
+        bedRequestedAt: serverTimestamp(),
+        bedRequestedBy: doctorId,
+        bedRequestStatus: "pending"
+      })
+      
+      setAppointments(prev =>
+        prev.map(apt => apt.id === appointment.id ? { 
+          ...apt, 
+          bedRequested: true,
+          bedRequestedAt: new Date(),
+          bedRequestedBy: doctorId,
+          bedRequestStatus: "pending"
+        } : apt)
+      )
+      
+      toast({
+        title: "Bed Requested",
+        description: "Bed request sent to receptionist for approval",
+      })
+    } catch (error) {
+      console.error("Error requesting bed:", error)
+      toast({
+        title: "Error",
+        description: "Failed to request bed",
         variant: "destructive"
       })
     }
@@ -728,17 +782,40 @@ export default function DoctorAppointmentsPage({ params }: { params: Promise<{ r
                               </Button>
                             )}
                             {apt.status === "in-progress" && (
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  setCompletingAppointment(apt)
-                                  setCompleteDialogOpen(true)
-                                }}
-                                className="w-full md:w-auto bg-green-600 hover:bg-green-700"
-                              >
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Complete & Bill
-                              </Button>
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    setCompletingAppointment(apt)
+                                    setCompleteDialogOpen(true)
+                                  }}
+                                  className="w-full md:w-auto bg-green-600 hover:bg-green-700"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Complete & Bill
+                                </Button>
+                                {!apt.bedRequested && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleRequestBed(apt)}
+                                    className="w-full md:w-auto"
+                                  >
+                                    <Bed className="h-4 w-4 mr-2" />
+                                    Request Bed / Admit Patient
+                                  </Button>
+                                )}
+                                {apt.bedRequested && apt.bedRequestStatus === "pending" && (
+                                  <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                    Bed Request Pending
+                                  </Badge>
+                                )}
+                                {apt.bedRequested && apt.bedRequestStatus === "approved" && (
+                                  <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    Bed Approved
+                                  </Badge>
+                                )}
+                              </>
                             )}
                             <Button
                               size="sm"
