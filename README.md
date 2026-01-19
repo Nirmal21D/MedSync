@@ -70,3 +70,4 @@ MedSync is an all-in-one developer toolkit for building scalable, role-based hea
 5. **Start the project**
    ```bash
    npm run dev
+# Swasthyasetu
