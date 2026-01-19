@@ -26,7 +26,8 @@ import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FileText, Plus, Search, CheckCircle, X, Clock, User, Calendar, Pill, Camera, Activity, AlertCircle } from "lucide-react"
-import { collection, getDocs, setDoc, doc, updateDoc, getDoc, arrayUnion, query, where } from "firebase/firestore"
+import { MedicineAutocomplete } from "@/components/prescriptions/medicine-autocomplete"
+import { collection, getDocs, setDoc, doc, updateDoc, getDoc, arrayUnion, query, where, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Prescription, Patient, InventoryItem, Appointment } from "@/lib/types"
 import { Firestore } from "firebase/firestore"
@@ -77,15 +78,43 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
       router.push("/")
     }
     if (db) {
-      getDocs(collection(db, "prescriptions")).then(snapshot => {
-        setPrescriptions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Prescription)))
+      // Verify Firestore connection
+      console.log("Firestore initialized:", !!db)
+      console.log("Firestore app:", db.app?.name)
+      
+
+      // Real-time listener for prescriptions
+      const unsubscribePrescriptions = onSnapshot(collection(db, "prescriptions"), (snapshot) => {
+        const prescriptionsList = snapshot.docs.map(doc => {
+          const data = doc.data()
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt || new Date(),
+          } as Prescription
+        })
+        setPrescriptions(prescriptionsList)
+        console.log("Loaded prescriptions:", prescriptionsList.length)
+      }, (error) => {
+        console.error("Error loading prescriptions:", error)
       })
+
+      // Fetch patients (can remain one-time fetch or switch to real-time if needed)
       getDocs(collection(db, "patients")).then(snapshot => {
         setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)))
+      }).catch(error => {
+        console.error("Error loading patients:", error)
       })
+      
       getDocs(collection(db, "inventory")).then(snapshot => {
         setAllInventory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem)))
+      }).catch(error => {
+        console.error("Error loading inventory:", error)
       })
+
+      return () => unsubscribePrescriptions()
+    } else {
+      console.warn("Firestore database not initialized. Check Firebase configuration.")
     }
   }, [user, loading, router])
 
@@ -104,7 +133,12 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
 
     // Role-based filtering
     if (role === "doctor") {
-      filtered = prescriptions.filter((p) => p.doctorName === "Dr. Sarah Johnson")
+      // Filter by doctor ID if current user is a doctor
+      if (user) {
+        // Handle various user object structures safely
+        const userId = 'id' in user ? String(user.id) : 'uid' in user ? String(user.uid) : "";
+        filtered = prescriptions.filter((p) => p.doctorId === userId)
+      }
     } else if (role === "pharmacist" || role === "lab-staff") {
       // Pharmacists and lab staff see all prescriptions
       // No additional filtering needed
@@ -238,57 +272,110 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
 
   const handleAddPrescription = async (newPrescription: Partial<Prescription>) => {
     // Early return if db or required data is missing
-    if (!db || !newPrescription.patientName) {
-      alert("Missing required information")
+    if (!db) {
+      console.error("Firestore database not initialized")
+      alert("Database connection error. Please refresh the page.")
       return
     }
 
-    // Find the patient document to get the correct patientId
-    const patientSnapshot = await getDocs(collection(db, "patients"))
-    const patientDoc = patientSnapshot.docs.find(
-      doc => doc.data().name.toLowerCase() === newPrescription.patientName?.toLowerCase()
+    if (!newPrescription.patientName) {
+      alert("Please select a patient")
+      return
+    }
+
+    // Validate medicines array
+    if (!newPrescription.medicines || newPrescription.medicines.length === 0) {
+      alert("Please add at least one medicine")
+      return
+    }
+
+    // Validate each medicine has required fields
+    const invalidMedicines = newPrescription.medicines.filter(
+      med => !med.name || !med.dosage || !med.frequency || !med.duration
     )
-
-    if (!patientDoc) {
-      // Show an error if patient not found
-      alert(`Patient "${newPrescription.patientName}" not found. Please check the name.`)
+    if (invalidMedicines.length > 0) {
+      alert("Please fill in all fields for each medicine (name, dosage, frequency, duration)")
       return
-    }
-
-    const patientData = patientDoc.data()
-    
-    // Safely extract doctor information
-    const doctorId = user && typeof user === 'object' && 'id' in user 
-      ? String(user.id) 
-      : "doc1"
-    
-    const doctorName = user && typeof user === 'object' && 'name' in user 
-      ? String(user.name) 
-      : "Dr. Sarah Johnson"
-
-    const prescription: Prescription = {
-      id: String(Date.now()),
-      patientId: patientData.id, 
-      patientName: newPrescription.patientName,
-      patientUhid: patientData.uhid || `UHID-${Date.now()}`,
-      doctorId,
-      doctorName,
-      medicines: newPrescription.medicines || [],
-      status: "pending",
-      notes: newPrescription.notes,
-      createdAt: new Date(),
     }
 
     try {
-      // Ensure db is defined before using
-      if (db) {
-    await setDoc(doc(db, "prescriptions", prescription.id), prescription)
-    setPrescriptions([...prescriptions, prescription])
-    setShowAddPrescription(false)
+      // Find the patient document to get the correct patientId
+      const patientSnapshot = await getDocs(collection(db, "patients"))
+      const patientDoc = patientSnapshot.docs.find(
+        doc => doc.data().name.toLowerCase() === newPrescription.patientName?.toLowerCase()
+      )
+
+      if (!patientDoc) {
+        alert(`Patient "${newPrescription.patientName}" not found. Please check the name.`)
+        return
       }
+
+      const patientData = patientDoc.data()
+      
+      // Safely extract doctor information
+      const doctorId = user && typeof user === 'object' && 'id' in user 
+        ? String(user.id) 
+        : user && typeof user === 'object' && 'uid' in user
+        ? String(user.uid)
+        : "doc1"
+      
+      const doctorName = user && typeof user === 'object' && 'name' in user 
+        ? String(user.name)
+        : user && typeof user === 'object' && 'displayName' in user
+        ? String(user.displayName)
+        : "Dr. Unknown"
+
+      // Create prescription object with proper data structure
+      const prescription: Prescription = {
+        id: `presc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // More unique ID
+        patientId: patientDoc.id, // Use document ID, not data().id
+        patientName: newPrescription.patientName,
+        patientUhid: patientData.uhid || `UHID-${Date.now()}`,
+        doctorId,
+        doctorName,
+        medicines: newPrescription.medicines,
+        status: "pending",
+        notes: newPrescription.notes || "",
+        createdAt: new Date(),
+      }
+
+      console.log("Creating prescription:", prescription)
+      console.log("Medicine names being persisted:", prescription.medicines.map(m => m.name))
+      
+      // Verify medicine names are not partial search strings
+      const hasPartialNames = prescription.medicines.some(med => {
+        const name = med.name.toLowerCase()
+        // Check if name looks like a partial search (very short or common prefixes)
+        return name.length < 5 || name === "para" || name === "amox" || name === "panto"
+      })
+      if (hasPartialNames) {
+        console.warn("WARNING: Some medicine names appear to be partial search strings, not selected medicines!")
+        console.warn("Medicine names:", prescription.medicines.map(m => m.name))
+      }
+
+      // Write to Firestore
+      const prescriptionRef = doc(db, "prescriptions", prescription.id)
+      await setDoc(prescriptionRef, {
+        ...prescription,
+        createdAt: prescription.createdAt, // Firestore will convert Date to Timestamp
+      })
+
+      console.log("Prescription written to Firestore successfully:", prescription.id)
+
+      // Update local state
+      // setPrescriptions([...prescriptions, prescription]) // No need to manually update, onSnapshot will handle it
+      setShowAddPrescription(false)
+
+      // Show success message
+      alert("Prescription created successfully!")
     } catch (error) {
       console.error("Error adding prescription:", error)
-      alert("Failed to create prescription. Please try again.")
+      console.error("Error details:", {
+        message: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+        prescription: newPrescription,
+      })
+      alert(`Failed to create prescription: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
   }
 
@@ -1133,10 +1220,66 @@ function AddPrescriptionForm({
     notes: "",
     medicines: [{ name: "", dosage: "", frequency: "", duration: "" }],
   })
+  const [recommendedFields, setRecommendedFields] = useState<{
+    [index: number]: { dosage?: boolean; frequency?: boolean; duration?: boolean }
+  }>({})
+  // Track selected medicines separately from search input
+  const [selectedMedicines, setSelectedMedicines] = useState<{
+    [index: number]: string | null
+  }>({})
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    
+    console.log("Form submission - formData:", formData)
+    console.log("Form submission - selectedMedicines:", selectedMedicines)
+    
+    // Validate that all medicines have been selected (not just typed)
+    const medicinesWithSelections = formData.medicines.map((medicine, index) => {
+      const selectedMedicine = selectedMedicines[index]
+      if (!selectedMedicine) {
+        console.warn(`Medicine at index ${index} not selected - typed value: "${medicine.name}"`)
+        return null // Medicine not selected from dropdown
+      }
+      console.log(`Medicine at index ${index} - selected: "${selectedMedicine}", will use for persistence`)
+      return {
+        ...medicine,
+        name: selectedMedicine, // Use selected medicine name, not search input
+      }
+    })
+    
+    // Check if any medicine is missing a selection
+    const hasUnselectedMedicines = medicinesWithSelections.some(m => m === null)
+    if (hasUnselectedMedicines) {
+      const unselectedIndices = medicinesWithSelections
+        .map((m, i) => m === null ? i + 1 : null)
+        .filter((i): i is number => i !== null)
+      alert(
+        `Please select a medicine from the dropdown for medicine ${unselectedIndices.join(", ")}. ` +
+        `Typing alone is not sufficient - you must click on a suggestion from the autocomplete dropdown.`
+      )
+      return
+    }
+    
+    // Validate all required fields are filled
+    const hasIncompleteMedicines = medicinesWithSelections.some(
+      med => !med!.name || !med!.dosage || !med!.frequency || !med!.duration
+    )
+    if (hasIncompleteMedicines) {
+      alert("Please fill in all fields (name, dosage, frequency, duration) for each medicine.")
+      return
+    }
+    
+    // Build final payload with selected medicine names
+    const finalPayload = {
+      ...formData,
+      medicines: medicinesWithSelections.filter((m): m is NonNullable<typeof m> => m !== null),
+    }
+    
+    console.log("Submitting prescription with selected medicine names:", finalPayload)
+    
+    // Submit with selected medicine names
+    onSubmit(finalPayload)
   }
 
   const addMedicine = () => {
@@ -1144,6 +1287,15 @@ function AddPrescriptionForm({
       ...formData,
       medicines: [...formData.medicines, { name: "", dosage: "", frequency: "", duration: "" }],
     })
+    // Clear recommendations and selection for new medicine
+    setRecommendedFields((prev) => ({
+      ...prev,
+      [formData.medicines.length]: {},
+    }))
+    setSelectedMedicines((prev) => ({
+      ...prev,
+      [formData.medicines.length]: null,
+    }))
   }
 
   const removeMedicine = (index: number) => {
@@ -1151,13 +1303,122 @@ function AddPrescriptionForm({
       ...formData,
       medicines: formData.medicines.filter((_, i) => i !== index),
     })
+    // Remove recommendation flags and selected medicine for deleted medicine
+    setRecommendedFields((prev) => {
+      const updated = { ...prev }
+      delete updated[index]
+      // Reindex remaining medicines
+      const reindexed: typeof prev = {}
+      Object.keys(updated).forEach((key) => {
+        const oldIndex = parseInt(key)
+        if (oldIndex > index) {
+          reindexed[oldIndex - 1] = updated[oldIndex]
+        } else if (oldIndex < index) {
+          reindexed[oldIndex] = updated[oldIndex]
+        }
+      })
+      return reindexed
+    })
+    setSelectedMedicines((prev) => {
+      const updated = { ...prev }
+      delete updated[index]
+      // Reindex remaining medicines
+      const reindexed: typeof prev = {}
+      Object.keys(updated).forEach((key) => {
+        const oldIndex = parseInt(key)
+        if (oldIndex > index) {
+          reindexed[oldIndex - 1] = updated[oldIndex]
+        } else if (oldIndex < index) {
+          reindexed[oldIndex] = updated[oldIndex]
+        }
+      })
+      return reindexed
+    })
   }
 
-  const updateMedicine = (index: number, field: string, value: string) => {
+  const updateMedicine = (index: number, field: string, value: string, isSelection: boolean = false) => {
     const updatedMedicines = formData.medicines.map((medicine, i) =>
       i === index ? { ...medicine, [field]: value } : medicine,
     )
     setFormData({ ...formData, medicines: updatedMedicines })
+    
+    // If user is typing in the name field (not selecting), clear the selection
+    if (field === "name" && !isSelection) {
+      // Only clear selection if the value doesn't match the selected medicine
+      // This allows the autocomplete to update the display without clearing selection
+      const currentSelection = selectedMedicines[index]
+      if (currentSelection && value !== currentSelection) {
+        // User is typing something different - clear selection
+        setSelectedMedicines((prev) => ({
+          ...prev,
+          [index]: null,
+        }))
+      }
+    } else {
+      // Clear recommendation flag when user manually edits other fields
+      setRecommendedFields((prev) => ({
+        ...prev,
+        [index]: {
+          ...prev[index],
+          [field]: false,
+        },
+      }))
+    }
+  }
+
+  // Fetch recommendations when medicine is selected from autocomplete
+  const handleMedicineSelect = async (index: number, medicineName: string) => {
+    if (!medicineName.trim()) return
+
+    // Store the selected medicine name (this is the source of truth for persistence)
+    setSelectedMedicines((prev) => ({
+      ...prev,
+      [index]: medicineName,
+    }))
+
+    // Update the form data name field to show the selected medicine (mark as selection to prevent clearing)
+    updateMedicine(index, "name", medicineName, true)
+
+    try {
+      const response = await fetch(
+        `/api/medicines/recommendations?name=${encodeURIComponent(medicineName)}`
+      )
+
+      if (!response.ok) {
+        console.warn("Failed to fetch recommendations")
+        return
+      }
+
+      const recommendations = await response.json()
+
+      // Update medicine fields with recommendations
+      const updatedMedicines = formData.medicines.map((medicine, i) =>
+        i === index
+          ? {
+              ...medicine,
+              name: medicineName, // Ensure selected name is stored
+              dosage: recommendations.dosage || medicine.dosage,
+              frequency: recommendations.frequency || medicine.frequency,
+              duration: recommendations.duration || medicine.duration,
+            }
+          : medicine
+      )
+
+      setFormData({ ...formData, medicines: updatedMedicines })
+
+      // Mark fields as recommended
+      setRecommendedFields((prev) => ({
+        ...prev,
+        [index]: {
+          dosage: !!recommendations.dosage,
+          frequency: !!recommendations.frequency,
+          duration: !!recommendations.duration,
+        },
+      }))
+    } catch (error) {
+      console.error("Error fetching recommendations:", error)
+      // Don't block form submission on error
+    }
   }
 
   return (
@@ -1195,30 +1456,58 @@ function AddPrescriptionForm({
             <CardContent className="pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Medicine Name *</Label>
-                  <Input
+                  <Label className="flex items-center gap-2">
+                    Medicine Name *
+                    {selectedMedicines[index] && (
+                      <span className="text-xs text-green-600 dark:text-green-400 font-normal">
+                        (Selected)
+                      </span>
+                    )}
+                    {!selectedMedicines[index] && medicine.name && (
+                      <span className="text-xs text-amber-600 dark:text-amber-400 font-normal">
+                        (Please select from dropdown)
+                      </span>
+                    )}
+                  </Label>
+                  <MedicineAutocomplete
                     value={medicine.name}
-                    onChange={(e) => updateMedicine(index, "name", e.target.value)}
+                    onChange={(value) => updateMedicine(index, "name", value)}
+                    onSelect={(value) => handleMedicineSelect(index, value)}
                     placeholder="Enter medicine name"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Dosage *</Label>
+                  <Label className="flex items-center gap-2">
+                    Dosage *
+                    {recommendedFields[index]?.dosage && (
+                      <span className="text-xs text-blue-600 dark:text-blue-400 font-normal">
+                        (Recommended)
+                      </span>
+                    )}
+                  </Label>
                   <Input
                     value={medicine.dosage}
                     onChange={(e) => updateMedicine(index, "dosage", e.target.value)}
                     placeholder="e.g., 500mg"
                     required
+                    className={recommendedFields[index]?.dosage ? "border-blue-300 bg-blue-50/50 dark:bg-blue-950/20" : ""}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Frequency *</Label>
+                  <Label className="flex items-center gap-2">
+                    Frequency *
+                    {recommendedFields[index]?.frequency && (
+                      <span className="text-xs text-blue-600 dark:text-blue-400 font-normal">
+                        (Recommended)
+                      </span>
+                    )}
+                  </Label>
                   <Select
                     value={medicine.frequency}
                     onValueChange={(value) => updateMedicine(index, "frequency", value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={recommendedFields[index]?.frequency ? "border-blue-300 bg-blue-50/50 dark:bg-blue-950/20" : ""}>
                       <SelectValue placeholder="Select frequency" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1231,12 +1520,20 @@ function AddPrescriptionForm({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Duration *</Label>
+                  <Label className="flex items-center gap-2">
+                    Duration *
+                    {recommendedFields[index]?.duration && (
+                      <span className="text-xs text-blue-600 dark:text-blue-400 font-normal">
+                        (Recommended)
+                      </span>
+                    )}
+                  </Label>
                   <Input
                     value={medicine.duration}
                     onChange={(e) => updateMedicine(index, "duration", e.target.value)}
                     placeholder="e.g., 7 days"
                     required
+                    className={recommendedFields[index]?.duration ? "border-blue-300 bg-blue-50/50 dark:bg-blue-950/20" : ""}
                   />
                 </div>
               </div>
