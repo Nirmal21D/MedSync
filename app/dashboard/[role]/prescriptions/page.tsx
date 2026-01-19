@@ -766,12 +766,17 @@ export default function PrescriptionsPage({ params }: { params: Promise<{ role: 
                         </CardHeader>
                         <CardContent>
                           <ul className="space-y-2">
-                            {scannedPatient.history.map((item, idx) => (
-                              <li key={idx} className="text-sm flex items-start gap-2">
-                                <span className="text-primary">•</span>
-                                <span>{item}</span>
-                              </li>
-                            ))}
+                            {scannedPatient.history.map((item, idx) => {
+                              const displayText = typeof item === 'string' 
+                                ? item 
+                                : (item as any)?.name || JSON.stringify(item)
+                              return (
+                                <li key={idx} className="text-sm flex items-start gap-2">
+                                  <span className="text-primary">•</span>
+                                  <span>{displayText}</span>
+                                </li>
+                              )
+                            })}
                           </ul>
                         </CardContent>
                       </Card>

@@ -292,13 +292,18 @@ export default function PatientScannerPage({ params }: { params: Promise<{ role:
                     )}
                     {patient.history && patient.history.length > 0 ? (
                       <div className="space-y-3">
-                        {patient.history.map((item, index) => (
-                          <Card key={index} className="border-l-4 border-l-blue-500">
-                            <CardContent className="pt-4">
-                              <p className="font-medium">{item}</p>
-                            </CardContent>
-                          </Card>
-                        ))}
+                        {patient.history.map((item, index) => {
+                          const displayText = typeof item === 'string' 
+                            ? item 
+                            : (item as any)?.name || JSON.stringify(item)
+                          return (
+                            <Card key={index} className="border-l-4 border-l-blue-500">
+                              <CardContent className="pt-4">
+                                <p className="font-medium">{displayText}</p>
+                              </CardContent>
+                            </Card>
+                          )
+                        })}
                       </div>
                     ) : (
                       <p className="text-center text-muted-foreground py-8">No medical history recorded</p>

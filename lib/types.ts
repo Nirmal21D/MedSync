@@ -16,9 +16,12 @@ export interface Patient {
     temperature: number
     oxygenSaturation: number
   }
-  history?: string[]
+  history?: any[]
   admissionDate?: Date
   status: "admitted" | "discharged" | "critical" | "stable"
+  // Bed assignment fields
+  bedAssignedAt?: Date | any
+  bedRatePerDay?: number
   nursingNotes?: NursingNote[]
   documents?: PatientDocument[]
   bills?: Array<{
@@ -243,6 +246,11 @@ export interface Appointment {
   prescriptionId?: string // Link to prescription
   billId?: string // Link to generated bill
   consultationNotes?: string // Doctor's notes after consultation
+  // Bed request fields
+  bedRequested?: boolean
+  bedRequestedAt?: Date | any
+  bedRequestedBy?: string
+  bedRequestStatus?: "pending" | "approved" | "rejected"
 }
 
 export interface LabTest {
